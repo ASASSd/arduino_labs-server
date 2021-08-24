@@ -6,9 +6,9 @@
 int magnetAnalogIn = A0;
 int sensval = 0;
 int bval = 0;
-const double k = 100.0 / (3.3 / 2);
-const double kfx = (3.3 / 2) / 512 * k;
-double outval = 0;
+const float k = 100.0 / (3.3 / 2);
+const float kfx = (3.3 / 2) / 512 * k;
+float outval = 0;
 uint32_t del_magnet = 1000;
 
 //      BLE includes          //
@@ -17,11 +17,13 @@ uint32_t del_magnet = 1000;
 BLEService labService("2086C901-9167-4F23-8A7A-F514BD665227");
 BLECharacteristic TCS34725_SEND_CHR_UID("B807621A-19E3-40E0-B4F5-AEDCFE28C7CA", BLERead | BLEWrite, 5, true);
 BLECharacteristic TCS34725_NOTIFY_CHR_UID("48606B19-820D-48D0-91B8-DF6A4F8DCBD4", BLERead | BLENotify, 17, true);
-BLELongCharacteristic DS18B20_SEND_CHR_UID("09EB425D-8627-4FCB-AEA8-638BCF3F73F7", BLERead | BLEWrite);
-BLEIntCharacteristic DS18B20_NOTIFY_CHR_UID("8103F9B3-C91E-47CD-8634-4B7D8F4D018D", BLERead | BLENotify);
-BLELongCharacteristic MAGNET_SEND_CHR_UID("3B75281E-00A0-4424-84C5-4C549CC1AE82", BLERead | BLEWrite);
-BLEIntCharacteristic MAGNET_NOTIFY_CHR_UID("EF8A1B0B-1005-4DAD-B49D-75F84488E52C", BLERead | BLENotify);
-byte ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0;
+BLECharacteristic DS18B20_SEND_CHR_UID("09EB425D-8627-4FCB-AEA8-638BCF3F73F7", BLERead | BLEWrite, 5, true);
+BLECharacteristic DS18B20_NOTIFY_CHR_UID("8103F9B3-C91E-47CD-8634-4B7D8F4D018D", BLERead | BLENotify, 5, true);
+BLECharacteristic MAGNET_SEND_CHR_UID("3B75281E-00A0-4424-84C5-4C549CC1AE82", BLERead | BLEWrite, 5, true);
+BLECharacteristic MAGNET_NOTIFY_CHR_UID("EF8A1B0B-1005-4DAD-B49D-75F84488E52C", BLERead | BLENotify, 5, true);
+BLECharacteristic MAX31855K_SEND_CHR_UID("2DAF3C9C-CABA-461C-9FBC-1839D6F4E5B9", BLERead | BLEWrite, 5, true);
+BLECharacteristic MAX31855K_NOTIFY_CHR_UID("F449E6B7-FE1E-45FF-AEBB-DCFC914DEB42", BLERead | BLENotify, 5, true);
+uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0;
 bool magnet_conn = false, voltage_conn = false;
 
 //      DS18B20 includes      //
@@ -71,10 +73,10 @@ uint32_t del_max31855 = 1000;
 //launching second (of two UARTs of Arduino nano 33 BLE) UART on any GPIO pins
 UART mytds(digitalPinToPinName(9), digitalPinToPinName(10), NC, NC);
 //command - data request from sensor
-byte command[] = {0xA0, 0x00, 0x00, 0x00, 0x00, 0xA0};
+uint8_t command[] = {0xA0, 0x00, 0x00, 0x00, 0x00, 0xA0};
 //msgs - where we store reply from sensor
-byte msgs[14];
-byte msg = 0x00;
+uint8_t msgs[14];
+uint8_t msg = 0x00;
 int hexToDec (int MSB, int LSB) {
   int dec = 0;
   dec = (MSB << 8) | LSB;
@@ -96,16 +98,26 @@ Thread* sensThread;
 void max31855() {
   thermocouple.begin();
   for (;;) {
+    float c = thermocouple.readCelsius();
+    uint32_t c_uint = 0;
+    memcpy(&c_uint, &c, sizeof c_uint);
+    uint8_t s[5];
+    s[0] = 0x00;
+    s[1] = (uint8_t)(c_uint & 0x000000FF);
+    s[2] = (uint8_t)((c_uint & 0x0000FF00) >> 8);
+    s[3] = (uint8_t)((c_uint & 0x00FF0000) >> 16);
+    s[4] = (uint8_t)((c_uint & 0xFF000000) >> 24);
+#ifdef DEBUG_OUTPUT
     Serial.print("Ambient Temp = ");
     Serial.println(thermocouple.readInternal());
-    double c = thermocouple.readCelsius();
-
     if (isnan(c)) {
       Serial.println("Something wrong with thermocouple!");
     } else {
       Serial.print("Thermocouple temp = ");
       Serial.println(c);
     }
+#endif
+    MAX31855K_NOTIFY_CHR_UID.writeValue(s, 5);
     ThisThread::sleep_for(del_max31855);
   }
 }
@@ -113,15 +125,23 @@ void max31855() {
 //routine for ds18b20 temperature sensor -------------------------------------
 
 void ds18b20() {
+  dallas.begin();
   for (;;) {
+    dallas.requestTemperatures();      //read temp from ds18b20  
+    uint16_t temp = (int)dallas.getTempCByIndex(0);
+    uint8_t s[5];
+    s[0] = 0x00;
+    s[1] = (uint8_t)(temp & 0x00FF);
+    s[2] = (uint8_t)((temp & 0xFF00) >> 8);
+    s[3] = 0x00;
+    s[4] = 0x00;
+#ifdef DEBUG_OUTPUT
     Serial.print("Initializing DS18B20 sensor... ");
-    dallas.begin();
-    Serial.println("DONE.");
-    dallas.requestTemperatures();              //read temp from ds18b20
-    byte temp = (int)dallas.getTempCByIndex(0);
-    DS18B20_NOTIFY_CHR_UID.setValue(temp);
+    Serial.println("DONE.");          
     Serial.print("Temperature is ");
-    Serial.println(DS18B20_NOTIFY_CHR_UID.value());
+    Serial.println(temp);
+#endif
+    DS18B20_NOTIFY_CHR_UID.writeValue(s, 5);
     ThisThread::sleep_for(del_ds18b20);
   }
 }
@@ -129,14 +149,12 @@ void ds18b20() {
 //routine for colorimeter tcs34725 -------------------------------------------
 
 void tcs34725() {
+  tcs.begin();
   for (;;) {
-    tcs.begin();
     uint16_t r, g, b, c, colorTemp, lux;
-    float rf, gf, bf;
-    uint8_t s[9];
+    uint8_t s[17];
     tcs.getRawData(&r, &g, &b, &c);
     colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
-    lux = tcs.calculateLux(r, g, b);
     s[0] = 0x00;
     s[1] = (uint8_t)(r & 0x00FF);
     s[2] = (uint8_t)((r & 0xFF00) >> 8);
@@ -203,8 +221,8 @@ void magnet() {
     sensval = analogRead(magnetAnalogIn);
     bval = sensval - 512;
     outval = bval * kfx;
-    outval *= -1;
-    MAGNET_NOTIFY_CHR_UID.setValue(outval);
+    outval *= -1;    
+    //MAGNET_NOTIFY_CHR_UID.setValue(outval);
 #ifdef DEBUG_OUTPUT
     Serial.print("Sensor raw value: ");
     Serial.println(sensval);
@@ -230,7 +248,7 @@ void BLEdisconnectHandler(BLEDevice central) {
 void BLEwriteDS18B20Handler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("Write event");
   int n_before = ds18b20_n;     //remembering last _n value
-  ds18b20_n = DS18B20_SEND_CHR_UID.value();   //to prevent exceptions
+  ds18b20_n = DS18B20_SEND_CHR_UID.value()[0];   //to prevent exceptions
   if (ds18b20_n && !n_before) { //thread isn't running and we're launching it
     sensThread = new Thread;
     sensThread->start(ds18b20);
@@ -250,8 +268,8 @@ void BLEwriteDS18B20Handler(BLEDevice central, BLECharacteristic characteristic)
 void BLEwriteTCS34725Handler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("Write event");
   int n_before = tcs34725_n;
-  uint8_t s[9];
-  for (int i = 0; i < 9; i++) {
+  uint8_t s[5];
+  for (int i = 0; i < 5; i++) {
     s[i] = TCS34725_SEND_CHR_UID.value()[i];
   }
   tcs34725_n = (int)s[0];
@@ -276,7 +294,7 @@ void BLEwriteTCS34725Handler(BLEDevice central, BLECharacteristic characteristic
 void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("Write event");
   int n_before = magnet_n;
-  magnet_n = MAGNET_SEND_CHR_UID.value();
+  magnet_n = MAGNET_SEND_CHR_UID.value()[0];
   if (magnet_n && !n_before && magnet_conn) {
     sensThread = new Thread;
     sensThread->start(magnet);
@@ -294,6 +312,32 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
   } else if (magnet_n && n_before && magnet_conn) {
     Serial.println("!Illegal event: launching another thread of magnet!");
   }
+#endif
+}
+
+void BLEwriteMAX31855Handler(BLEDevice central, BLECharacteristic characteristic) {
+  Serial.println("Write event");
+  int n_before = max31855_n;
+  uint8_t s[5];
+  for (int i = 0; i < 5; i++) {
+    s[i] = MAX31855K_SEND_CHR_UID.value()[i];
+  }
+  max31855_n = (int)s[0];
+  del_max31855 = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
+  if (max31855_n && !n_before) {
+    sensThread = new Thread;
+    sensThread->start(max31855);
+  } else if (!max31855_n && n_before) {
+    sensThread->terminate();
+    delete sensThread;
+  }
+#ifdef DEBUG_OUTPUT
+  else if (!max31855_n && !n_before) {
+    Serial.println("!Illegal event: stopping non-existing thread of tcs34725!");
+  } else {
+    Serial.println("!Illegal event: launching another thread of tcs34725!");
+  }
+  Serial.println(del_max31855, DEC);
 #endif
 }
 
@@ -322,7 +366,7 @@ void setup() {
   Serial.begin(9600);
   while (!Serial) delay(1);
   Serial.println();
-  Serial.println("Testing software v0.3.5 init... ");
+  Serial.println("Testing software v0.4 init... ");
 #endif
   Serial.print("Starting BLE... ");
   if (BLE.begin()) {
@@ -337,18 +381,23 @@ void setup() {
     labService.addCharacteristic(TCS34725_NOTIFY_CHR_UID);
     labService.addCharacteristic(MAGNET_SEND_CHR_UID);
     labService.addCharacteristic(MAGNET_NOTIFY_CHR_UID);
+    labService.addCharacteristic(MAX31855K_SEND_CHR_UID);
+    labService.addCharacteristic(MAX31855K_NOTIFY_CHR_UID);
     BLE.addService(labService);
     BLE.setEventHandler(BLEConnected, BLEconnectHandler);
     BLE.setEventHandler(BLEDisconnected, BLEdisconnectHandler);
     DS18B20_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteDS18B20Handler);
     TCS34725_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteTCS34725Handler);
     MAGNET_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteMAGNETHandler);
-    DS18B20_SEND_CHR_UID.setValue(0);
-    DS18B20_NOTIFY_CHR_UID.setValue(0);
+    MAX31855K_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteMAX31855Handler);
+    DS18B20_SEND_CHR_UID.setValue("");
+    DS18B20_NOTIFY_CHR_UID.setValue("");
     TCS34725_SEND_CHR_UID.setValue("");
     TCS34725_NOTIFY_CHR_UID.setValue("");
-    MAGNET_SEND_CHR_UID.setValue(0);
-    MAGNET_NOTIFY_CHR_UID.setValue(0);
+    MAGNET_SEND_CHR_UID.setValue("");
+    MAGNET_NOTIFY_CHR_UID.setValue("");
+    MAX31855K_SEND_CHR_UID.setValue("");
+    MAX31855K_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
     Serial.println("DONE.");
   } else {
