@@ -101,7 +101,7 @@ void max31855() {
     float c = thermocouple.readCelsius();
     uint8_t s[5];
     s[0] = 0x00;
-    memcpy(&s[1], &c, sizeof c);
+    memcpy(&s[1], &c, sizeof(c));
 #ifdef DEBUG_OUTPUT
     Serial.print("Ambient Temp = ");
     Serial.println(thermocouple.readInternal());
@@ -122,7 +122,7 @@ void max31855() {
 void ds18b20() {
   dallas.begin();
   for (;;) {
-    dallas.requestTemperatures();      //read temp from ds18b20  
+    dallas.requestTemperatures();      //read temp from ds18b20
     uint16_t temp = (int)dallas.getTempCByIndex(0);
     uint8_t s[5];
     s[0] = 0x00;
@@ -132,7 +132,7 @@ void ds18b20() {
     s[4] = 0x00;
 #ifdef DEBUG_OUTPUT
     Serial.print("Initializing DS18B20 sensor... ");
-    Serial.println("DONE.");          
+    Serial.println("DONE.");
     Serial.print("Temperature is ");
     Serial.println(temp);
 #endif
@@ -216,7 +216,7 @@ void magnet() {
     sensval = analogRead(magnetAnalogIn);
     bval = sensval - 512;
     outval = bval * kfx;
-    outval *= -1;    
+    outval *= -1;
     uint8_t s[5];
     memcpy(&s[1], &outval, sizeof(outval));
 #ifdef DEBUG_OUTPUT
