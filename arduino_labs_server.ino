@@ -1,4 +1,4 @@
-//comment line below to disable debug output
+//comment line below to disable debug mode
 #define DEBUG_OUTPUT
 
 //    ANALOG magnetic includes    //
@@ -99,14 +99,9 @@ void max31855() {
   thermocouple.begin();
   for (;;) {
     float c = thermocouple.readCelsius();
-    uint32_t c_uint = 0;
-    memcpy(&c_uint, &c, sizeof c_uint);
     uint8_t s[5];
     s[0] = 0x00;
-    s[1] = (uint8_t)(c_uint & 0x000000FF);
-    s[2] = (uint8_t)((c_uint & 0x0000FF00) >> 8);
-    s[3] = (uint8_t)((c_uint & 0x00FF0000) >> 16);
-    s[4] = (uint8_t)((c_uint & 0xFF000000) >> 24);
+    memcpy(&s[1], &c, sizeof c);
 #ifdef DEBUG_OUTPUT
     Serial.print("Ambient Temp = ");
     Serial.println(thermocouple.readInternal());
@@ -222,13 +217,15 @@ void magnet() {
     bval = sensval - 512;
     outval = bval * kfx;
     outval *= -1;    
-    //MAGNET_NOTIFY_CHR_UID.setValue(outval);
+    uint8_t s[5];
+    memcpy(&s[1], &outval, sizeof(outval));
 #ifdef DEBUG_OUTPUT
     Serial.print("Sensor raw value: ");
-    Serial.println(sensval);
-    Serial.print("Magnet value: ");
+    Serial.print(sensval);
+    Serial.print("\tMagnet value: ");
     Serial.println(outval);
 #endif
+    MAGNET_NOTIFY_CHR_UID.writeValue(s, 5);
     ThisThread::sleep_for(del_magnet);
   }
 }
@@ -307,7 +304,7 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
     Serial.println("!Illegal event: stopping non-existing thread of magnet!");
   } else if (magnet_n && !n_before && !magnet_conn) {
     Serial.println("!Illegal event: sensor not connected!");
-    MAGNET_SEND_CHR_UID.setValue(0);
+    MAGNET_SEND_CHR_UID.setValue("");
     magnet_n = 0;
   } else if (magnet_n && n_before && magnet_conn) {
     Serial.println("!Illegal event: launching another thread of magnet!");
@@ -366,7 +363,7 @@ void setup() {
   Serial.begin(9600);
   while (!Serial) delay(1);
   Serial.println();
-  Serial.println("Testing software v0.4 init... ");
+  Serial.println("Testing software v0.4.1 init... ");
 #endif
   Serial.print("Starting BLE... ");
   if (BLE.begin()) {
