@@ -91,7 +91,11 @@ uint32_t del_bat3u = 1000;
 using namespace mbed;
 using namespace rtos;
 Thread sensMuxThread;
-Thread* sensThread;
+Thread* max31855Thread;
+Thread* tcs34725Thread;
+Thread* ds18b20Thread;
+Thread* A0Thread;
+Thread* A1Thread;
 
 //routine for thermocouple ---------------------------------------------------
 
@@ -244,14 +248,14 @@ void BLEdisconnectHandler(BLEDevice central) {
 
 void BLEwriteDS18B20Handler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("Write event");
-  int n_before = ds18b20_n;     //remembering last _n value
-  ds18b20_n = DS18B20_SEND_CHR_UID.value()[0];   //to prevent exceptions
+  uint8_t n_before = ds18b20_n;     //remembering last _n value
+  ds18b20_n = (uint8_t)DS18B20_SEND_CHR_UID.value()[0];   //to prevent exceptions
   if (ds18b20_n && !n_before) { //thread isn't running and we're launching it
-    sensThread = new Thread;
-    sensThread->start(ds18b20);
+    ds18b20Thread = new Thread;
+    ds18b20Thread->start(ds18b20);
   } else if (!ds18b20_n && n_before) {  //thread is running and we're stopping it
-    sensThread->terminate();
-    delete sensThread;
+    ds18b20Thread->terminate();
+    delete ds18b20Thread;
   }
 #ifdef DEBUG_OUTPUT //code below isn't necessary, but it's good for debugging
   else if (!ds18b20_n && !n_before) { //we can't stop thread, if it isn't running
@@ -264,19 +268,19 @@ void BLEwriteDS18B20Handler(BLEDevice central, BLECharacteristic characteristic)
 
 void BLEwriteTCS34725Handler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("Write event");
-  int n_before = tcs34725_n;
+  uint8_t n_before = tcs34725_n;
   uint8_t s[5];
   for (int i = 0; i < 5; i++) {
-    s[i] = TCS34725_SEND_CHR_UID.value()[i];
+    s[i] = (uint8_t)TCS34725_SEND_CHR_UID.value()[i];
   }
-  tcs34725_n = (int)s[0];
+  tcs34725_n = s[0];
   del_tcs34725 = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (tcs34725_n && !n_before) {
-    sensThread = new Thread;
-    sensThread->start(tcs34725);
+    tcs34725Thread = new Thread;
+    tcs34725Thread->start(tcs34725);
   } else if (!tcs34725_n && n_before) {
-    sensThread->terminate();
-    delete sensThread;
+    tcs34725Thread->terminate();
+    delete tcs34725Thread;
   }
 #ifdef DEBUG_OUTPUT
   else if (!tcs34725_n && !n_before) {
@@ -290,43 +294,54 @@ void BLEwriteTCS34725Handler(BLEDevice central, BLECharacteristic characteristic
 
 void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("Write event");
-  int n_before = magnet_n;
-  magnet_n = MAGNET_SEND_CHR_UID.value()[0];
+  uint8_t n_before = magnet_n;
+  magnet_n = (uint8_t)MAGNET_SEND_CHR_UID.value()[0];
   if (magnet_n && !n_before && magnet_conn) {
-    sensThread = new Thread;
-    sensThread->start(magnet);
+    if (magnetAnalogIn == A0) {
+      A0Thread = new Thread;
+      A0Thread->start(magnet);
+    } else if (magnetAnalogIn == A1) {
+      A1Thread = new Thread;
+      A1Thread->start(magnet);
+    }
   } else if (!magnet_n && n_before && magnet_conn) {
-    sensThread->terminate();
-    delete sensThread;
-  }
-#ifdef DEBUG_OUTPUT
-  else if (!magnet_n && !n_before && !magnet_conn) {
-    Serial.println("!Illegal event: stopping non-existing thread of magnet!");
-  } else if (magnet_n && !n_before && !magnet_conn) {
-    Serial.println("!Illegal event: sensor not connected!");
+    if (magnetAnalogIn == A0) {
+      A0Thread->terminate();
+      delete A0Thread;
+    } else if (magnetAnalogIn == A1) {
+      A1Thread->terminate();
+      delete A1Thread;
+    }
+  } else if(magnet_n && !n_before && !magnet_conn){
     MAGNET_SEND_CHR_UID.setValue("");
     magnet_n = 0;
-  } else if (magnet_n && n_before && magnet_conn) {
+#ifdef DEBUG_OUTPUT
+    Serial.println("!Illegal event: sensor is not connected!");
+  } else if (!magnet_n && !n_before) {
+    Serial.println("!Illegal event: stopping non-existing thread of magnet!");
+  } else if (magnet_n && n_before) {
     Serial.println("!Illegal event: launching another thread of magnet!");
+  }
+#else
   }
 #endif
 }
 
 void BLEwriteMAX31855Handler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("Write event");
-  int n_before = max31855_n;
+  uint8_t n_before = max31855_n;
   uint8_t s[5];
   for (int i = 0; i < 5; i++) {
-    s[i] = MAX31855K_SEND_CHR_UID.value()[i];
+    s[i] = (uint8_t)MAX31855K_SEND_CHR_UID.value()[i];
   }
-  max31855_n = (int)s[0];
+  max31855_n = s[0];
   del_max31855 = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (max31855_n && !n_before) {
-    sensThread = new Thread;
-    sensThread->start(max31855);
+    max31855Thread = new Thread;
+    max31855Thread->start(max31855);
   } else if (!max31855_n && n_before) {
-    sensThread->terminate();
-    delete sensThread;
+    max31855Thread->terminate();
+    delete max31855Thread;
   }
 #ifdef DEBUG_OUTPUT
   else if (!max31855_n && !n_before) {
@@ -363,7 +378,7 @@ void setup() {
   Serial.begin(9600);
   while (!Serial) delay(1);
   Serial.println();
-  Serial.println("Testing software v0.4.1 init... ");
+  Serial.println("Testing software v0.4.2 init... ");
 #endif
   Serial.print("Starting BLE... ");
   if (BLE.begin()) {
@@ -406,9 +421,9 @@ void setup() {
 void loop() {
   BLE.poll();
   /*
-     sensThread = new Thread;
-     sensThread->start(thermocpl);
-     while (sensThread->get_state() != Thread::Deleted);
-     delete sensThread;
+     ds18b20Thread = new Thread;
+     ds18b20Thread->start(thermocpl);
+     while (ds18b20Thread->get_state() != Thread::Deleted);
+     delete ds18b20Thread;
   */
 }
