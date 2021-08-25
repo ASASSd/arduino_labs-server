@@ -26,7 +26,7 @@ BLECharacteristic MAGNET_NOTIFY_CHR_UID("EF8A1B0B-1005-4DAD-B49D-75F84488E52C", 
 BLECharacteristic MAX31855K_SEND_CHR_UID("2DAF3C9C-CABA-461C-9FBC-1839D6F4E5B9", BLERead | BLEWrite, 5, true);
 BLECharacteristic MAX31855K_NOTIFY_CHR_UID("F449E6B7-FE1E-45FF-AEBB-DCFC914DEB42", BLERead | BLENotify, 5, true);
 uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0;
-bool magnet_conn = false, voltage_conn = false;
+boolean magnet_conn = false, voltage_conn = false;
 
 //      DS18B20 includes      //
 
@@ -223,16 +223,17 @@ void magnet() {
     bval = sensval - 512;
     outval = bval * kfx;
     outval *= -1;
-    uint8_t s[5];
-    s[0] = 0x00;
-    memcpy(&s[1], &outval, sizeof(outval));
+    uint8_t s[6];
+    s[0] = 0x00; 
+    s[1] = 0x00;
+    memcpy(&s[2], &outval, sizeof(outval));
 #ifdef DEBUG_MODE
     Serial.print("Sensor raw value: ");
     Serial.print(sensval);
     Serial.print("\tMagnet value: ");
     Serial.println(outval);
 #endif
-    MAGNET_NOTIFY_CHR_UID.writeValue(s, 5);
+    MAGNET_NOTIFY_CHR_UID.writeValue(s, 6);
     ThisThread::sleep_for(del_magnet);
   }
 }
