@@ -1,11 +1,13 @@
 //comment line below to disable debug mode
-#define DEBUG_OUTPUT
+#define DEBUG_MODE
+
+#define SOFTVERSION "v0.4.3-armhf-debug"
 
 //    ANALOG magnetic includes    //
 
-int magnetAnalogIn = A0;
-int sensval = 0;
-int bval = 0;
+uint8_t magnetAnalogIn = A0;
+uint16_t sensval = 0;
+uint16_t bval = 0;
 const float k = 100.0 / (3.3 / 2);
 const float kfx = (3.3 / 2) / 512 * k;
 float outval = 0;
@@ -59,7 +61,7 @@ uint32_t del_tcs34725 = 1000;
 
 // Example creating a thermocouple instance with hardware SPI
 // on a given CS pin.
-#define MAXCS   10
+const uint8_t MAXCS = 10;
 Adafruit_MAX31855 thermocouple(MAXCS);
 
 // Example creating a thermocouple instance with hardware SPI
@@ -106,7 +108,7 @@ void max31855() {
     uint8_t s[5];
     s[0] = 0x00;
     memcpy(&s[1], &c, sizeof(c));
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
     Serial.print("Ambient Temp = ");
     Serial.println(thermocouple.readInternal());
     if (isnan(c)) {
@@ -134,7 +136,7 @@ void ds18b20() {
     s[2] = (uint8_t)((temp & 0xFF00) >> 8);
     s[3] = 0x00;
     s[4] = 0x00;
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
     Serial.print("Initializing DS18B20 sensor... ");
     Serial.println("DONE.");
     Serial.print("Temperature is ");
@@ -171,7 +173,7 @@ void tcs34725() {
     s[14] = (uint8_t)((colorTemp & 0xFF00) >> 8);
     s[15] = 0x00;
     s[16] = 0x00;
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
     Serial.print("Color Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
     Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
     Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
@@ -202,7 +204,7 @@ void bat3u() {
   }
   int tds = hexToDec(msgs[9], msgs[10]);  //bytes 9 and 10 contain TDS
   int ntc = hexToDec(msgs[11], msgs[12]); //bytes 11 and 12 contain temperature
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
   Serial.println();
   Serial.print("TDS value : ");
   Serial.print(tds);
@@ -222,8 +224,9 @@ void magnet() {
     outval = bval * kfx;
     outval *= -1;
     uint8_t s[5];
+    s[0] = 0x00;
     memcpy(&s[1], &outval, sizeof(outval));
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
     Serial.print("Sensor raw value: ");
     Serial.print(sensval);
     Serial.print("\tMagnet value: ");
@@ -234,20 +237,26 @@ void magnet() {
   }
 }
 
-//routine for BLE ------------------------------------------------------------
+//routine for BLE handlers ---------------------------------------------------
 
 void BLEconnectHandler(BLEDevice central) {
+#ifdef DEBUG_MODE
   Serial.print("Connected central: ");
   Serial.println(central.address());
+#endif
 }
 
 void BLEdisconnectHandler(BLEDevice central) {
+#ifdef DEBUG_MODE
   Serial.print("Disconnected central: ");
   Serial.println(central.address());
+#endif
 }
 
 void BLEwriteDS18B20Handler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
   Serial.println("Write event");
+#endif
   uint8_t n_before = ds18b20_n;     //remembering last _n value
   ds18b20_n = (uint8_t)DS18B20_SEND_CHR_UID.value()[0];   //to prevent exceptions
   if (ds18b20_n && !n_before) { //thread isn't running and we're launching it
@@ -257,7 +266,7 @@ void BLEwriteDS18B20Handler(BLEDevice central, BLECharacteristic characteristic)
     ds18b20Thread->terminate();
     delete ds18b20Thread;
   }
-#ifdef DEBUG_OUTPUT //code below isn't necessary, but it's good for debugging
+#ifdef DEBUG_MODE //code below isn't necessary, but it's good for debugging
   else if (!ds18b20_n && !n_before) { //we can't stop thread, if it isn't running
     Serial.println("!Illegal event: stopping non-existing thread of ds18b20!");
   } else {  //we can't run already running thread
@@ -267,7 +276,9 @@ void BLEwriteDS18B20Handler(BLEDevice central, BLECharacteristic characteristic)
 }
 
 void BLEwriteTCS34725Handler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
   Serial.println("Write event");
+#endif
   uint8_t n_before = tcs34725_n;
   uint8_t s[5];
   for (int i = 0; i < 5; i++) {
@@ -282,7 +293,7 @@ void BLEwriteTCS34725Handler(BLEDevice central, BLECharacteristic characteristic
     tcs34725Thread->terminate();
     delete tcs34725Thread;
   }
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
   else if (!tcs34725_n && !n_before) {
     Serial.println("!Illegal event: stopping non-existing thread of tcs34725!");
   } else {
@@ -293,7 +304,9 @@ void BLEwriteTCS34725Handler(BLEDevice central, BLECharacteristic characteristic
 }
 
 void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
   Serial.println("Write event");
+#endif
   uint8_t n_before = magnet_n;
   magnet_n = (uint8_t)MAGNET_SEND_CHR_UID.value()[0];
   if (magnet_n && !n_before && magnet_conn) {
@@ -312,10 +325,10 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
       A1Thread->terminate();
       delete A1Thread;
     }
-  } else if(magnet_n && !n_before && !magnet_conn){
+  } else if (magnet_n && !n_before && !magnet_conn) {
     MAGNET_SEND_CHR_UID.setValue("");
     magnet_n = 0;
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
     Serial.println("!Illegal event: sensor is not connected!");
   } else if (!magnet_n && !n_before) {
     Serial.println("!Illegal event: stopping non-existing thread of magnet!");
@@ -328,7 +341,9 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
 }
 
 void BLEwriteMAX31855Handler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
   Serial.println("Write event");
+#endif
   uint8_t n_before = max31855_n;
   uint8_t s[5];
   for (int i = 0; i < 5; i++) {
@@ -343,7 +358,7 @@ void BLEwriteMAX31855Handler(BLEDevice central, BLECharacteristic characteristic
     max31855Thread->terminate();
     delete max31855Thread;
   }
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
   else if (!max31855_n && !n_before) {
     Serial.println("!Illegal event: stopping non-existing thread of tcs34725!");
   } else {
@@ -374,13 +389,15 @@ void analogSensorMux() {
 }
 
 void setup() {
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_MODE
   Serial.begin(9600);
   while (!Serial) delay(1);
   Serial.println();
-  Serial.println("Testing software v0.4.2 init... ");
-#endif
+  Serial.print("Testing software ");
+  Serial.print(SOFTVERSION);
+  Serial.println(" init... ");
   Serial.print("Starting BLE... ");
+#endif
   if (BLE.begin()) {
     Serial.println("DONE.");
     Serial.print("Loading BLE name and service... ");
@@ -411,10 +428,14 @@ void setup() {
     MAX31855K_SEND_CHR_UID.setValue("");
     MAX31855K_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
+#ifdef DEBUG_MODE
     Serial.println("DONE.");
   } else {
     Serial.println("ERROR");
   }
+#else
+  }
+#endif
   sensMuxThread.start(analogSensorMux);   //starting sensors hotplug thread
 }
 
