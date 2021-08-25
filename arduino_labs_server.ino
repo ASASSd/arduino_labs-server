@@ -6,8 +6,8 @@
 //    ANALOG magnetic includes    //
 
 uint8_t magnetAnalogIn = A0;
-uint16_t sensval = 0;
-uint16_t bval = 0;
+uint32_t sensval = 0;
+uint32_t bval = 0;
 const float k = 100.0 / (3.3 / 2);
 const float kfx = (3.3 / 2) / 512 * k;
 float outval = 0;
@@ -225,7 +225,7 @@ void magnet() {
     outval *= -1;
     uint8_t s[6];
     s[0] = 0x00; 
-    s[1] = 0x00;
+    s[1] = 0x01;
     memcpy(&s[2], &outval, sizeof(outval));
 #ifdef DEBUG_MODE
     Serial.print("Sensor raw value: ");
