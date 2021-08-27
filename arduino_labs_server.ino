@@ -21,7 +21,7 @@ BLECharacteristic MAGNET_SEND_CHR_UID("3B75281E-00A0-4424-84C5-4C549CC1AE82", BL
 BLECharacteristic MAGNET_NOTIFY_CHR_UID("EF8A1B0B-1005-4DAD-B49D-75F84488E52C", BLERead | BLENotify, 6, false);
 BLECharacteristic MAX31855K_SEND_CHR_UID("2DAF3C9C-CABA-461C-9FBC-1839D6F4E5B9", BLERead | BLEWrite, 5, true);
 BLECharacteristic MAX31855K_NOTIFY_CHR_UID("F449E6B7-FE1E-45FF-AEBB-DCFC914DEB42", BLERead | BLENotify, 5, true);
-uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0;
+uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0;
 boolean magnet_conn = false, voltage_conn = false;
 
 //      DS18B20 includes      //
@@ -81,6 +81,14 @@ int hexToDec (int MSB, int LSB) {
   return dec;
 }
 uint32_t del_bat3u = 1000;
+
+//      B-LUX-V30B includes     //
+
+#include <Adafruit_I2CDevice.h>
+#include <Adafruit_BusIO_Register.h>
+#define I2C_ADDRESS 0x4A
+Adafruit_I2CDevice i2c_dev = Adafruit_I2CDevice(I2C_ADDRESS);
+uint32_t del_bluxv30 = 1000;
 
 //       RTOS includes         //
 
@@ -210,6 +218,22 @@ void bat3u() {
   //hotfix from chinese site
   Serial.println(ntc / 100.0);
 #endif
+}
+
+//routine for B-LUX-V30B sensor ----------------------------------------------
+
+void bluxv30() {
+  i2c_dev.begin();
+  for (;;) {
+    Adafruit_BusIO_Register data_reg = Adafruit_BusIO_Register(&i2c_dev, 0x00, 4, LSBFIRST);
+    uint32_t lux;
+    lux = data_reg.read();
+#ifdef DEBUG_MODE
+    Serial.print("received bytes 0x");
+    Serial.println(lux, HEX);
+#endif
+    ThisThread::sleep_for(del_bluxv30);
+  }
 }
 
 //routine for analog magnet sensor -------------------------------------------
