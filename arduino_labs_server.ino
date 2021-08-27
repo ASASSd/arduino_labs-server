@@ -1,16 +1,12 @@
 //comment line below to disable debug mode
 #define DEBUG_MODE
 
-#define SOFTVERSION "v0.4.4-debug"
+#define SOFTVERSION "v0.4.5-debug"
 
 //    ANALOG magnet includes    //
 
 uint8_t magnetAnalogIn = A0;
 uint16_t sensval = 0;
-int16_t bval = 0;
-const float k = 100.0 / (3.3 / 2);
-const float kfx = (3.3 / 2) / 512 * k;
-float outval = 0;
 uint32_t del_magnet = 1000;
 
 //      BLE includes          //
@@ -223,18 +219,15 @@ void magnet() {
   for (;;) {
     uint16_t time1 = micros() / 1000;
     sensval = analogRead(magnetAnalogIn);
-    bval = sensval - 512;
-    outval = bval * kfx;
-    outval *= -1;
     uint8_t s[6];
     s[0] = 0x00;
     s[1] = 0x00;
-    memcpy(&s[2], &outval, sizeof(outval));
+    s[4] = 0x00;
+    s[5] = 0x00;
+    memcpy(&s[2], &sensval, sizeof(sensval));
 #ifdef DEBUG_MODE
     Serial.print("Sensor raw value: ");
     Serial.print(sensval);
-    Serial.print("\tMagnet value: ");
-    Serial.println(outval);
 #endif
     MAGNET_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint16_t time2 = micros() / 1000;
