@@ -10,7 +10,7 @@ uint16_t sensval = 0;
 int16_t bval = 0;
 const float k = 100.0 / (3.3 / 2);
 const float kfx = (3.3 / 2) / 512 * k;
-int32_t outval = 0;
+float outval = 0;
 uint32_t del_magnet = 1000;
 
 //      BLE includes          //
@@ -104,6 +104,7 @@ Thread* A1Thread;
 void max31855() {
   thermocouple.begin();
   for (;;) {
+    uint16_t time1 = micros() / 1000;
     float c = thermocouple.readCelsius();
     uint8_t s[5];
     s[0] = 0x00;
@@ -119,7 +120,8 @@ void max31855() {
     }
 #endif
     MAX31855K_NOTIFY_CHR_UID.writeValue(s, 5);
-    ThisThread::sleep_for(del_max31855);
+    uint16_t time2 = micros() / 1000;
+    ThisThread::sleep_for(del_max31855 - (time2 - time1));
   }
 }
 
@@ -137,8 +139,6 @@ void ds18b20() {
     s[3] = 0x00;
     s[4] = 0x00;
 #ifdef DEBUG_MODE
-    Serial.print("Initializing DS18B20 sensor... ");
-    Serial.println("DONE.");
     Serial.print("Temperature is ");
     Serial.println(temp);
 #endif
@@ -152,6 +152,7 @@ void ds18b20() {
 void tcs34725() {
   tcs.begin();
   for (;;) {
+    uint16_t time1 = micros() / 1000;
     uint16_t r, g, b, c, colorTemp, lux;
     uint8_t s[17];
     tcs.getRawData(&r, &g, &b, &c);
@@ -186,7 +187,8 @@ void tcs34725() {
     Serial.println(s[2], HEX);
 #endif
     TCS34725_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
-    ThisThread::sleep_for(del_tcs34725);
+    uint16_t time2 = micros() / 1000;
+    ThisThread::sleep_for(del_tcs34725 - (time2 - time1));
   }
 }
 
@@ -219,6 +221,7 @@ void bat3u() {
 void magnet() {
   pinMode(magnetAnalogIn, INPUT);
   for (;;) {
+    uint16_t time1 = micros() / 1000;
     sensval = analogRead(magnetAnalogIn);
     bval = sensval - 512;
     outval = bval * kfx;
@@ -234,7 +237,8 @@ void magnet() {
     Serial.println(outval);
 #endif
     MAGNET_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
-    ThisThread::sleep_for(del_magnet);
+    uint16_t time2 = micros() / 1000;
+    ThisThread::sleep_for(del_magnet - (time2 - time1));
   }
 }
 
@@ -258,8 +262,13 @@ void BLEwriteDS18B20Handler(BLEDevice central, BLECharacteristic characteristic)
 #ifdef DEBUG_MODE
   Serial.println("[DEBUG]\tWrite event");
 #endif
-  uint8_t n_before = ds18b20_n;     //remembering last _n value
-  ds18b20_n = (uint8_t)DS18B20_SEND_CHR_UID.value()[0];   //to prevent exceptions
+  uint8_t n_before = ds18b20_n;     //remembering last _n value to prevent exceptions
+  uint8_t s[5];
+  for (int i = 0; i < 5; i++) {
+    s[i] = (uint8_t)DS18B20_SEND_CHR_UID.value()[i];
+  }
+  ds18b20_n = s[0];
+  del_ds18b20 = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (ds18b20_n && !n_before) { //thread isn't running and we're launching it
     ds18b20Thread = new Thread;
     ds18b20Thread->start(ds18b20);
@@ -312,7 +321,12 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
   Serial.println("[DEBUG]\tWrite event");
 #endif
   uint8_t n_before = magnet_n;
-  magnet_n = (uint8_t)MAGNET_SEND_CHR_UID.value()[0];
+  uint8_t s[5];
+  for (int i = 0; i < 5; i++) {
+    s[i] = (uint8_t)MAGNET_SEND_CHR_UID.value()[i];
+  }
+  magnet_n = s[0];
+  del_magnet = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (magnet_n && !n_before && magnet_conn) {
     if (magnetAnalogIn == A0) {
       A0Thread = new Thread;
