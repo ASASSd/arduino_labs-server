@@ -1,5 +1,5 @@
 //comment line below to disable debug mode
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 #define SOFTVERSION "v0.4.6-debug"
 
@@ -160,7 +160,7 @@ void tcs34725() {
   tcs.begin();
   for (;;) {
     uint16_t time1 = micros() / 1000;
-    uint16_t r, g, b, c, colorTemp, lux;
+    uint16_t r, g, b, c, colorTemp, lux = 0x00;
     uint8_t s[17];
     tcs.getRawData(&r, &g, &b, &c);
     colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
