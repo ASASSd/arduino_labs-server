@@ -1,5 +1,5 @@
 //comment line below to disable debug mode
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 #define SOFTVERSION "v0.4.6-debug"
 
