@@ -21,8 +21,8 @@ BLECharacteristic MAGNET_SEND_CHR_UID("3B75281E-00A0-4424-84C5-4C549CC1AE82", BL
 BLECharacteristic MAGNET_NOTIFY_CHR_UID("EF8A1B0B-1005-4DAD-B49D-75F84488E52C", BLERead | BLENotify, 6, false);
 BLECharacteristic MAX31855K_SEND_CHR_UID("2DAF3C9C-CABA-461C-9FBC-1839D6F4E5B9", BLERead | BLEWrite, 5, true);
 BLECharacteristic MAX31855K_NOTIFY_CHR_UID("F449E6B7-FE1E-45FF-AEBB-DCFC914DEB42", BLERead | BLENotify, 5, true);
-BLECharacteristic BLUX_SEND_CHR_UID("", BLERead | BLEWrite, 5, true);
-BLECharacteristic BLUX_NOTIFY_CHR_UID("", BLERead | BLENotify, 5, true);
+BLECharacteristic BLUX_SEND_CHR_UID("B97A0D31-5278-408E-9CBB-D236E8A1A5C3", BLERead | BLEWrite, 5, true);
+BLECharacteristic BLUX_NOTIFY_CHR_UID("BF7C133C-7438-4AEF-A577-3D1BF65B2D1D", BLERead | BLENotify, 5, true);
 uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0;
 boolean magnet_conn = false, voltage_conn = false;
 
@@ -230,15 +230,17 @@ void bluxv30() {
   for (;;) {
     uint16_t time1 = micros() / 1000;
     Adafruit_BusIO_Register data_reg = Adafruit_BusIO_Register(&blux_i2c_obj, 0x00, 4, LSBFIRST);
-    uint32_t lux;
+    uint32_t val;
     uint8_t s[5];
-    lux = data_reg.read();
+    float lux;
+    val = data_reg.read();
+    lux = ((float)val * 1.4) / 1000.0;
     s[0] = 0x00;
     memcpy(&s[1], &lux, sizeof(lux));
     BLUX_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
 #ifdef DEBUG_MODE
-    Serial.print("received bytes 0x");
-    Serial.println(lux, DEC);
+    Serial.print("LUX is ");
+    Serial.println(lux);
 #endif
     uint16_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_bluxv30 - (time2 - time1));
