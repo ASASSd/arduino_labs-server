@@ -1,13 +1,19 @@
 //comment line below to disable debug mode
 #define DEBUG_MODE
 
-#define SOFTVERSION "v0.4.6-debug"
+#define SOFTVERSION "v0.5-debug"
 
 //    ANALOG magnet includes    //
 
 uint8_t magnetAnalogIn = A0;
-uint16_t sensval = 0;
+uint16_t magnetSensVal = 0;
 uint32_t del_magnet = 1000;
+
+//    ANALOG TDS includes    //
+
+uint8_t tdsAnalogIn = A0;
+uint16_t tdsSensVal = 0;
+uint32_t del_tds = 1000;
 
 //      BLE includes          //
 
@@ -18,13 +24,15 @@ BLECharacteristic TCS34725_NOTIFY_CHR_UID("48606B19-820D-48D0-91B8-DF6A4F8DCBD4"
 BLECharacteristic DS18B20_SEND_CHR_UID("09EB425D-8627-4FCB-AEA8-638BCF3F73F7", BLERead | BLEWrite, 5, true);
 BLECharacteristic DS18B20_NOTIFY_CHR_UID("8103F9B3-C91E-47CD-8634-4B7D8F4D018D", BLERead | BLENotify, 5, true);
 BLECharacteristic MAGNET_SEND_CHR_UID("3B75281E-00A0-4424-84C5-4C549CC1AE82", BLERead | BLEWrite, 5, true);
-BLECharacteristic MAGNET_NOTIFY_CHR_UID("EF8A1B0B-1005-4DAD-B49D-75F84488E52C", BLERead | BLENotify, 6, false);
+BLECharacteristic MAGNET_NOTIFY_CHR_UID("EF8A1B0B-1005-4DAD-B49D-75F84488E52C", BLERead | BLENotify, 6, true);
 BLECharacteristic MAX31855K_SEND_CHR_UID("2DAF3C9C-CABA-461C-9FBC-1839D6F4E5B9", BLERead | BLEWrite, 5, true);
 BLECharacteristic MAX31855K_NOTIFY_CHR_UID("F449E6B7-FE1E-45FF-AEBB-DCFC914DEB42", BLERead | BLENotify, 5, true);
 BLECharacteristic BLUX_SEND_CHR_UID("B97A0D31-5278-408E-9CBB-D236E8A1A5C3", BLERead | BLEWrite, 5, true);
 BLECharacteristic BLUX_NOTIFY_CHR_UID("BF7C133C-7438-4AEF-A577-3D1BF65B2D1D", BLERead | BLENotify, 5, true);
-uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0;
-boolean magnet_conn = false, voltage_conn = false;
+BLECharacteristic TDS_SEND_CHR_UID("FE0BECBC-6B15-4BEB-89EA-7FE670BC75C9", BLERead | BLEWrite, 5, true);
+BLECharacteristic TDS_NOTIFY_CHR_UID("89117508-0D7E-47CC-9688-09177F4E979B", BLERead | BLENotify, 6, true);
+uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0, tds_n = 0;
+boolean magnet_conn = false, voltage_conn = false, tds_conn = false;
 
 //      DS18B20 includes      //
 
@@ -68,22 +76,6 @@ Adafruit_MAX31855 thermocouple(MAXCS);
 //Adafruit_MAX31855 thermocouple(MAXCS, SPI1);
 uint32_t del_max31855 = 1000;
 
-//     BAT3U TDS includes     //
-
-//launching second (of two UARTs of Arduino nano 33 BLE) UART on any GPIO pins
-UART mytds(digitalPinToPinName(9), digitalPinToPinName(10), NC, NC);
-//command - data request from sensor
-uint8_t command[] = {0xA0, 0x00, 0x00, 0x00, 0x00, 0xA0};
-//msgs - where we store reply from sensor
-uint8_t msgs[14];
-uint8_t msg = 0x00;
-int hexToDec (int MSB, int LSB) {
-  int dec = 0;
-  dec = (MSB << 8) | LSB;
-  return dec;
-}
-uint32_t del_bat3u = 1000;
-
 //      B-LUX-V30B includes     //
 
 #include <Adafruit_I2CDevice.h>
@@ -111,7 +103,7 @@ Thread* bluxv30Thread;
 void max31855() {
   thermocouple.begin();
   for (;;) {
-    uint16_t time1 = micros() / 1000;
+    uint32_t time1 = micros() / 1000;
     float c = thermocouple.readCelsius();
     uint8_t s[5];
     s[0] = 0x00;
@@ -127,7 +119,7 @@ void max31855() {
     }
 #endif
     MAX31855K_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
-    uint16_t time2 = micros() / 1000;
+    uint32_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_max31855 - (time2 - time1));
   }
 }
@@ -159,7 +151,7 @@ void ds18b20() {
 void tcs34725() {
   tcs.begin();
   for (;;) {
-    uint16_t time1 = micros() / 1000;
+    uint32_t time1 = micros() / 1000;
     uint16_t r, g, b, c, colorTemp, lux = 0x00;
     uint8_t s[17];
     tcs.getRawData(&r, &g, &b, &c);
@@ -194,33 +186,32 @@ void tcs34725() {
     Serial.println(s[2], HEX);
 #endif
     TCS34725_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
-    uint16_t time2 = micros() / 1000;
+    uint32_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_tcs34725 - (time2 - time1));
   }
 }
 
-//routine for BitAtom Bat3U TDS sensor ---------------------------------------
+//routine for analog TDS sensor ----------------------------------------------
 
-void bat3u() {
-  //sending command
-  mytds.write(command, 6);
-  int i = 0;
-  while (mytds.available()) {
-    msg = mytds.read();
-    //storing data in array
-    msgs[i] = msg;
-    i++;
-  }
-  int tds = hexToDec(msgs[9], msgs[10]);  //bytes 9 and 10 contain TDS
-  int ntc = hexToDec(msgs[11], msgs[12]); //bytes 11 and 12 contain temperature
+void tds() {
+  pinMode(tdsAnalogIn, INPUT);
+  for (;;) {
+    uint32_t time1 = micros() / 1000;
+    uint8_t s[6];
+    tdsSensVal = analogRead(tdsAnalogIn);
+    s[0] = 0x00;
+    s[1] = 0x00;
+    s[4] = 0x00;
+    s[5] = 0x00;
+    memcpy(&s[2], &tdsSensVal, sizeof(tdsSensVal));
 #ifdef DEBUG_MODE
-  Serial.println();
-  Serial.print("TDS value : ");
-  Serial.print(tds);
-  Serial.print(", temperature : ");
-  //hotfix from chinese site
-  Serial.println(ntc / 100.0);
+    Serial.print("TDS sensor raw value: ");
+    Serial.println(tdsSensVal);
 #endif
+    TDS_NOTIFY_CHR_UID.writeValue(s, 6);
+    uint32_t time2 = micros() / 1000;
+    ThisThread::sleep_for(del_tds - (time2 - time1));
+  }
 }
 
 //routine for B-LUX-V30B sensor ----------------------------------------------
@@ -228,7 +219,7 @@ void bat3u() {
 void bluxv30() {
   blux_i2c_obj.begin();
   for (;;) {
-    uint16_t time1 = micros() / 1000;
+    uint32_t time1 = micros() / 1000;
     Adafruit_BusIO_Register data_reg = Adafruit_BusIO_Register(&blux_i2c_obj, 0x00, 4, LSBFIRST);
     uint32_t val;
     uint8_t s[5];
@@ -242,7 +233,7 @@ void bluxv30() {
     Serial.print("LUX is ");
     Serial.println(lux);
 #endif
-    uint16_t time2 = micros() / 1000;
+    uint32_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_bluxv30 - (time2 - time1));
   }
 }
@@ -252,20 +243,20 @@ void bluxv30() {
 void magnet() {
   pinMode(magnetAnalogIn, INPUT);
   for (;;) {
-    uint16_t time1 = micros() / 1000;
-    sensval = analogRead(magnetAnalogIn);
+    uint32_t time1 = micros() / 1000;
+    magnetSensVal = analogRead(magnetAnalogIn);
     uint8_t s[6];
     s[0] = 0x00;
     s[1] = 0x00;
     s[4] = 0x00;
     s[5] = 0x00;
-    memcpy(&s[2], &sensval, sizeof(sensval));
+    memcpy(&s[2], &magnetSensVal, sizeof(magnetSensVal));
 #ifdef DEBUG_MODE
     Serial.print("Sensor raw value: ");
-    Serial.print(sensval);
+    Serial.print(magnetSensVal);
 #endif
     MAGNET_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
-    uint16_t time2 = micros() / 1000;
+    uint32_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_magnet - (time2 - time1));
   }
 }
@@ -417,7 +408,7 @@ void BLEwriteMAX31855Handler(BLEDevice central, BLECharacteristic characteristic
 #endif
 }
 
-void BLEwriteBLUXV30Handler(BLEDevice central, BLECharacteristic characteristic){
+void BLEwriteBLUXV30Handler(BLEDevice central, BLECharacteristic characteristic) {
 #ifdef DEBUG_MODE
   Serial.println("[DEBUG]\tWrite event");
 #endif
@@ -426,7 +417,7 @@ void BLEwriteBLUXV30Handler(BLEDevice central, BLECharacteristic characteristic)
   for (int i = 0; i < 5; i++) {
     s[i] = (uint8_t)BLUX_SEND_CHR_UID.value()[i];
   }
-  //?memcpy(&s, &(BLUX_SEND_CHR_UID.value()), sizeof(BLUX_SEND_CHR_UID.value())); 
+  //?memcpy(&s, &(BLUX_SEND_CHR_UID.value()), sizeof(BLUX_SEND_CHR_UID.value()));
   bluxv30_n = s[0];
   del_bluxv30 = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (bluxv30_n && !n_before) {
@@ -447,6 +438,50 @@ void BLEwriteBLUXV30Handler(BLEDevice central, BLECharacteristic characteristic)
 #endif
 }
 
+void BLEwriteTDSHandler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
+  Serial.println("[DEBUG]\tWrite event");
+#endif
+  uint8_t n_before = tds_n;
+  uint8_t s[5];
+  for (int i = 0; i < 5; i++) {
+    s[i] = (uint8_t)TDS_SEND_CHR_UID.value()[i];
+  }
+  tds_n = s[0];
+  del_tds = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
+  if (tds_n && !n_before && tds_conn) {
+    if (tdsAnalogIn == A0) {
+      A0Thread = new Thread;
+      A0Thread->start(tds);
+    } else if (tdsAnalogIn == A1) {
+      A1Thread = new Thread;
+      A1Thread->start(tds);
+    }
+  } else if (!tds_n && n_before) {
+    if (tdsAnalogIn == A0) {
+      A0Thread->terminate();
+      delete A0Thread;
+    } else if (tdsAnalogIn == A1) {
+      A1Thread->terminate();
+      delete A1Thread;
+    }
+  } else if (tds_n && !n_before && !tds_conn) {
+    TDS_SEND_CHR_UID.setValue("");
+    tds_n = 0;
+#ifdef DEBUG_MODE
+    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
+  } else if (!tds_n && !n_before) {
+    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of tds!");
+  } else if (tds_n && n_before) {
+    Serial.println("[ERROR]\tIllegal event: launching another thread of tds!");
+  }
+  Serial.print("[DEBUG]\tdelay_tds = ");
+  Serial.println(del_tds);
+#else
+  }
+#endif
+}
+
 //routine for analog sensor selection ----------------------------------------
 
 void analogSensorMux() {
@@ -462,6 +497,15 @@ void analogSensorMux() {
       magnet_conn = true;
     } else {
       magnet_conn = false;
+    }
+    if (750 < _a0_sens_id && _a0_sens_id < 780) {
+      tdsAnalogIn = A0;
+      tds_conn = true;
+    } else if (750 < _a1_sens_id && _a1_sens_id < 780) {
+      tdsAnalogIn = A1;
+      tds_conn = true;
+    } else {
+      tds_conn = false;
     }
     ThisThread::sleep_for(100);
   }
@@ -493,6 +537,8 @@ void setup() {
     labService.addCharacteristic(MAX31855K_NOTIFY_CHR_UID);
     labService.addCharacteristic(BLUX_SEND_CHR_UID);
     labService.addCharacteristic(BLUX_NOTIFY_CHR_UID);
+    labService.addCharacteristic(TDS_SEND_CHR_UID);
+    labService.addCharacteristic(TDS_NOTIFY_CHR_UID);
     BLE.addService(labService);
     BLE.setEventHandler(BLEConnected, BLEconnectHandler);
     BLE.setEventHandler(BLEDisconnected, BLEdisconnectHandler);
@@ -501,6 +547,7 @@ void setup() {
     MAGNET_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteMAGNETHandler);
     MAX31855K_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteMAX31855Handler);
     BLUX_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteBLUXV30Handler);
+    TDS_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteTDSHandler);
     DS18B20_SEND_CHR_UID.setValue("");
     DS18B20_NOTIFY_CHR_UID.setValue("");
     TCS34725_SEND_CHR_UID.setValue("");
@@ -511,6 +558,8 @@ void setup() {
     MAX31855K_NOTIFY_CHR_UID.setValue("");
     BLUX_SEND_CHR_UID.setValue("");
     BLUX_NOTIFY_CHR_UID.setValue("");
+    TDS_SEND_CHR_UID.setValue("");
+    TDS_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
 #ifdef DEBUG_MODE
     Serial.println("DONE.");
