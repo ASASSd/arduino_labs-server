@@ -9,6 +9,12 @@ uint8_t magnetAnalogIn = A0;
 uint16_t magnetSensVal = 0;
 uint32_t del_magnet = 1000;
 
+//    ANALOG pressure includes    //
+
+uint8_t pressureAnalogIn = A0;
+uint16_t pressureSensVal = 0;
+uint32_t del_pressure = 1000;
+
 //    ANALOG TDS includes    //
 
 uint8_t tdsAnalogIn = A0;
@@ -39,8 +45,10 @@ BLECharacteristic TDS_SEND_CHR_UID("FE0BECBC-6B15-4BEB-89EA-7FE670BC75C9", BLERe
 BLECharacteristic TDS_NOTIFY_CHR_UID("89117508-0D7E-47CC-9688-09177F4E979B", BLERead | BLENotify, 6, true);
 BLECharacteristic PH_SEND_CHR_UID("4572926D-B013-4868-9DD1-A930CD44D7FF", BLERead | BLEWrite, 5, true);
 BLECharacteristic PH_NOTIFY_CHR_UID("9B264AE2-98F1-4905-A495-C15113A0D35B", BLERead | BLENotify, 6, true);
-uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0, tds_n = 0, ph_n;
-bool magnet_conn = false, voltage_conn = false, tds_conn = false, ph_conn = false;
+BLECharacteristic MPX57000P_SEND_CHR_UID("6C8B0BBC-8096-4A20-9051-1819B5001EFD", BLERead | BLENotify, 5, true);
+BLECharacteristic MPX57000P_NOTIFY_CHR_UID("D22A68DB-3CC5-44FA-BDDE-45528B2A367D", BLERead | BLENotify, 6, true);
+uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0;
+bool magnet_conn = false, voltage_conn = false, tds_conn = false, ph_conn = false, pressure_conn = false;
 
 //      DS18B20 includes      //
 
@@ -624,6 +632,8 @@ void setup() {
     labService.addCharacteristic(TDS_NOTIFY_CHR_UID);
     labService.addCharacteristic(PH_SEND_CHR_UID);
     labService.addCharacteristic(PH_NOTIFY_CHR_UID);
+    labService.addCharacteristic(MPX57000P_SEND_CHR_UID);
+    labService.addCharacteristic(MPX57000P_NOTIFY_CHR_UID);
     BLE.addService(labService);
     BLE.setEventHandler(BLEConnected, BLEconnectHandler);
     BLE.setEventHandler(BLEDisconnected, BLEdisconnectHandler);
@@ -648,6 +658,8 @@ void setup() {
     TDS_NOTIFY_CHR_UID.setValue("");
     PH_SEND_CHR_UID.setValue("");
     PH_NOTIFY_CHR_UID.setValue("");
+    MPX57000P_SEND_CHR_UID.setValue("");
+    MPX57000P_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
 #ifdef DEBUG_MODE
     Serial.println("DONE.");
