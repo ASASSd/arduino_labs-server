@@ -276,6 +276,29 @@ void ph() {
   }
 }
 
+//routine for analog pressure sensor -----------------------------------------
+
+void pressure() {
+  pinMode(pressureAnalogIn, INPUT);
+  for (;;) {
+    uint32_t time1 = micros() / 1000;
+    pressureSensVal = analogRead(pressureAnalogIn);
+    uint8_t s[6];
+    s[0] = 0x00;
+    s[1] = 0x00;
+    s[4] = 0x00;
+    s[5] = 0x00;
+    memcpy(&s[2], &pressureSensVal, sizeof(pressureSensVal));
+#ifdef DEBUG_MODE
+    Serial.print("[PRES]\tSensor raw value: ");
+    Serial.println(pressureSensVal);
+#endif
+    MPX57000P_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
+    uint32_t time2 = micros() / 1000;
+    ThisThread::sleep_for(del_pressure - (time2 - time1));
+  }
+}
+
 //routine for analog magnet sensor -------------------------------------------
 
 void magnet() {
@@ -559,6 +582,50 @@ void BLEwritePHHandler(BLEDevice central, BLECharacteristic characteristic) {
   }
   Serial.print("[DEBUG]\tdelay_ph = ");
   Serial.println(del_ph);
+#else
+  }
+#endif
+}
+
+void BLEwritePRESHandler() {
+#ifdef DEBUG_MODE
+  Serial.println("[DEBUG]\tWrite event");
+#endif
+  uint8_t n_before = pressure_n;
+  uint8_t s[5];
+  for (uint8_t i = 0; i < 5; i++) {
+    s[i] = (uint8_t)MPX57000P_SEND_CHR_UID.value()[i];
+  }
+  pressure_n = s[0];
+  del_pressure = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
+  if (pressure_n && !n_before && pressure_conn) {
+    if (pressureAnalogIn == A0) {
+      A0Thread = new Thread;
+      A0Thread->start(ph);
+    } else if (pressureAnalogIn == A1) {
+      A1Thread = new Thread;
+      A1Thread->start(ph);
+    }
+  } else if (!pressure_n && n_before) {
+    if (pressureAnalogIn == A0) {
+      A0Thread->terminate();
+      delete A0Thread;
+    } else if (pressureAnalogIn == A1) {
+      A1Thread->terminate();
+      delete A1Thread;
+    }
+  } else if (pressure_n && !n_before && !pressure_conn) {
+    MPX57000P_SEND_CHR_UID.setValue("");
+    pressure_n = 0;
+#ifdef DEBUG_MODE
+    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
+  } else if (!pressure_n && !n_before) {
+    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of ph!");
+  } else if (pressure_n && n_before) {
+    Serial.println("[ERROR]\tIllegal event: launching another thread of pressure!");
+  }
+  Serial.print("[DEBUG]\tdelay_pressure = ");
+  Serial.println(del_pressure);
 #else
   }
 #endif
