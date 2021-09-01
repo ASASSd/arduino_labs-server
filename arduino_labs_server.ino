@@ -1,7 +1,7 @@
 //comment line below to disable debug mode
 #define DEBUG_MODE
 
-#define SOFTVERSION "v0.6.1-debug"
+#define SOFTVERSION "v0.7.2-debug"
 
 //    ANALOG magnet includes    //
 
@@ -45,7 +45,7 @@ BLECharacteristic TDS_SEND_CHR_UID("FE0BECBC-6B15-4BEB-89EA-7FE670BC75C9", BLERe
 BLECharacteristic TDS_NOTIFY_CHR_UID("89117508-0D7E-47CC-9688-09177F4E979B", BLERead | BLENotify, 6, true);
 BLECharacteristic PH_SEND_CHR_UID("4572926D-B013-4868-9DD1-A930CD44D7FF", BLERead | BLEWrite, 5, true);
 BLECharacteristic PH_NOTIFY_CHR_UID("9B264AE2-98F1-4905-A495-C15113A0D35B", BLERead | BLENotify, 6, true);
-BLECharacteristic MPX57000P_SEND_CHR_UID("6C8B0BBC-8096-4A20-9051-1819B5001EFD", BLERead | BLENotify, 5, true);
+BLECharacteristic MPX57000P_SEND_CHR_UID("6C8B0BBC-8096-4A20-9051-1819B5001EFD", BLERead | BLEWrite, 5, true);
 BLECharacteristic MPX57000P_NOTIFY_CHR_UID("D22A68DB-3CC5-44FA-BDDE-45528B2A367D", BLERead | BLENotify, 6, true);
 uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0;
 bool magnet_conn = false, voltage_conn = false, tds_conn = false, ph_conn = false, pressure_conn = false;
@@ -587,7 +587,7 @@ void BLEwritePHHandler(BLEDevice central, BLECharacteristic characteristic) {
 #endif
 }
 
-void BLEwritePRESHandler() {
+void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
 #ifdef DEBUG_MODE
   Serial.println("[DEBUG]\tWrite event");
 #endif
@@ -601,10 +601,10 @@ void BLEwritePRESHandler() {
   if (pressure_n && !n_before && pressure_conn) {
     if (pressureAnalogIn == A0) {
       A0Thread = new Thread;
-      A0Thread->start(ph);
+      A0Thread->start(pressure);
     } else if (pressureAnalogIn == A1) {
       A1Thread = new Thread;
-      A1Thread->start(ph);
+      A1Thread->start(pressure);
     }
   } else if (!pressure_n && n_before) {
     if (pressureAnalogIn == A0) {
@@ -665,6 +665,15 @@ void analogSensorMux() {
     } else {
       ph_conn = false;
     }
+    if (245 < _a0_sens_id && _a0_sens_id < 275) {
+      pressureAnalogIn = A0;
+      pressure_conn = true;
+    } else if (245 < _a1_sens_id && _a1_sens_id < 275) {
+      pressureAnalogIn = A1;
+      pressure_conn = true;
+    } else {
+      pressure_conn = false;
+    }
     ThisThread::sleep_for(100);
   }
 }
@@ -711,6 +720,7 @@ void setup() {
     BLUX_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteBLUXV30Handler);
     TDS_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteTDSHandler);
     PH_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwritePHHandler);
+    MPX57000P_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwritePRESHandler);
     DS18B20_SEND_CHR_UID.setValue("");
     DS18B20_NOTIFY_CHR_UID.setValue("");
     TCS34725_SEND_CHR_UID.setValue("");
