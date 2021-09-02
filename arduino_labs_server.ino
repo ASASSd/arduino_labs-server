@@ -748,6 +748,15 @@ void analogSensorMux() {
     } else {
       pressure_conn = false;
     }
+    if (370 < _a0_sens_id && _a0_sens_id < 410) {
+      pressureAnalogIn = A0;
+      pressure_conn = true;
+    } else if (370 < _a1_sens_id && _a1_sens_id < 410) {
+      pressureAnalogIn = A1;
+      pressure_conn = true;
+    } else {
+      pressure_conn = false;
+    }
     ThisThread::sleep_for(100);
   }
 }
@@ -797,7 +806,7 @@ void setup() {
     TDS_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteTDSHandler);
     PH_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwritePHHandler);
     MPX57000P_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwritePRESHandler);
-    VOLT_READ_CHR_UID.setEventHandler(BLEWritten, BLEwriteVOLTHandler);
+    VOLT_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteVOLTHandler);
     DS18B20_SEND_CHR_UID.setValue("");
     DS18B20_NOTIFY_CHR_UID.setValue("");
     TCS34725_SEND_CHR_UID.setValue("");
@@ -814,7 +823,7 @@ void setup() {
     PH_NOTIFY_CHR_UID.setValue("");
     MPX57000P_SEND_CHR_UID.setValue("");
     MPX57000P_NOTIFY_CHR_UID.setValue("");
-    VOLT_READ_CHR_UID.setValue("");
+    VOLT_SEND_CHR_UID.setValue("");
     VOLT_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
 #ifdef DEBUG_MODE
