@@ -27,6 +27,12 @@ uint8_t phAnalogIn = A0;
 uint16_t phSensVal = 0;
 uint32_t del_ph = 1000;
 
+//    ANALOG voltage includes   //
+
+uint8_t voltageAnalogIn = A0;
+uint16_t voltageSensVal = 0;
+uint32_t del_voltage = 1000;
+
 //      BLE includes          //
 
 #include <ArduinoBLE.h>
@@ -47,7 +53,9 @@ BLECharacteristic PH_SEND_CHR_UID("4572926D-B013-4868-9DD1-A930CD44D7FF", BLERea
 BLECharacteristic PH_NOTIFY_CHR_UID("9B264AE2-98F1-4905-A495-C15113A0D35B", BLERead | BLENotify, 6, true);
 BLECharacteristic MPX57000P_SEND_CHR_UID("6C8B0BBC-8096-4A20-9051-1819B5001EFD", BLERead | BLEWrite, 5, true);
 BLECharacteristic MPX57000P_NOTIFY_CHR_UID("D22A68DB-3CC5-44FA-BDDE-45528B2A367D", BLERead | BLENotify, 6, true);
-uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0;
+BLECharacteristic VOLT_SEND_CHR_UID("EB0C9C2F-CD83-4460-8AC5-33DDAB36A393", BLERead | BLEWrite, 5, true);
+BLECharacteristic VOLT_NOTIFY_CHR_UID("3C04F8A5-C302-468F-975B-E0EFD4FF2DD4", BLERead | BLENotify, 6, true);
+uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0;
 bool magnet_conn = false, voltage_conn = false, tds_conn = false, ph_conn = false, pressure_conn = false;
 
 //      DS18B20 includes      //
@@ -296,6 +304,28 @@ void pressure() {
     MPX57000P_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_pressure - (time2 - time1));
+  }
+}
+//routine for analog voltage sensor ------------------------------------------
+
+void voltage() {
+  pinMode(voltageAnalogIn, INPUT);
+  for (;;) {
+    uint32_t time1 = micros() / 1000;
+    voltageSensVal = analogRead(voltageAnalogIn);
+    uint8_t s[6];
+    s[0] = 0x00;
+    s[1] = 0x00;
+    s[4] = 0x00;
+    s[5] = 0x00;
+    memcpy(&s[2], &voltageSensVal, sizeof(voltageSensVal));
+#ifdef DEBUG_MODE
+    Serial.print("[PRES]\tSensor raw value: ");
+    Serial.println(voltageSensVal);
+#endif
+    VOLT_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
+    uint32_t time2 = micros() / 1000;
+    ThisThread::sleep_for(del_voltage - (time2 - time1));
   }
 }
 
@@ -631,6 +661,50 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
 #endif
 }
 
+void BLEwriteVOLTHandler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
+  Serial.println("[DEBUG]\tWrite event");
+#endif
+  uint8_t n_before = voltage_n;
+  uint8_t s[5];
+  for (uint8_t i = 0; i < 5; i++) {
+    s[i] = (uint8_t)VOLT_SEND_CHR_UID.value()[i];
+  }
+  voltage_n = s[0];
+  del_voltage = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
+  if (voltage_n && !n_before && voltage_conn) {
+    if (voltageAnalogIn == A0) {
+      A0Thread = new Thread;
+      A0Thread->start(voltage);
+    } else if (voltageAnalogIn == A1) {
+      A1Thread = new Thread;
+      A1Thread->start(voltage);
+    }
+  } else if (!voltage_n && n_before) {
+    if (voltageAnalogIn == A0) {
+      A0Thread->terminate();
+      delete A0Thread;
+    } else if (voltageAnalogIn == A1) {
+      A1Thread->terminate();
+      delete A1Thread;
+    }
+  } else if (voltage_n && !n_before && !voltage_conn) {
+    VOLT_SEND_CHR_UID.setValue("");
+    voltage_n = 0;
+#ifdef DEBUG_MODE
+    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
+  } else if (!voltage_n && !n_before) {
+    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of ph!");
+  } else if (voltage_n && n_before) {
+    Serial.println("[ERROR]\tIllegal event: launching another thread of pressure!");
+  }
+  Serial.print("[DEBUG]\tdelay_pressure = ");
+  Serial.println(del_voltage);
+#else
+  }
+#endif
+}
+
 //routine for analog sensor selection ----------------------------------------
 
 void analogSensorMux() {
@@ -710,6 +784,8 @@ void setup() {
     labService.addCharacteristic(PH_NOTIFY_CHR_UID);
     labService.addCharacteristic(MPX57000P_SEND_CHR_UID);
     labService.addCharacteristic(MPX57000P_NOTIFY_CHR_UID);
+    labService.addCharacteristic(VOLT_SEND_CHR_UID);
+    labService.addCharacteristic(VOLT_NOTIFY_CHR_UID);
     BLE.addService(labService);
     BLE.setEventHandler(BLEConnected, BLEconnectHandler);
     BLE.setEventHandler(BLEDisconnected, BLEdisconnectHandler);
@@ -721,6 +797,7 @@ void setup() {
     TDS_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteTDSHandler);
     PH_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwritePHHandler);
     MPX57000P_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwritePRESHandler);
+    VOLT_READ_CHR_UID.setEventHandler(BLEWritten, BLEwriteVOLTHandler);
     DS18B20_SEND_CHR_UID.setValue("");
     DS18B20_NOTIFY_CHR_UID.setValue("");
     TCS34725_SEND_CHR_UID.setValue("");
@@ -737,6 +814,8 @@ void setup() {
     PH_NOTIFY_CHR_UID.setValue("");
     MPX57000P_SEND_CHR_UID.setValue("");
     MPX57000P_NOTIFY_CHR_UID.setValue("");
+    VOLT_READ_CHR_UID.setValue("");
+    VOLT_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
 #ifdef DEBUG_MODE
     Serial.println("DONE.");
