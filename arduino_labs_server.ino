@@ -1,7 +1,7 @@
 //comment line below to disable debug mode
 #define DEBUG_MODE
 
-#define SOFTVERSION "v0.8-debug"
+#define SOFTVERSION "v0.8.2-debug"
 
 //    ANALOG magnet includes    //
 
@@ -320,7 +320,7 @@ void voltage() {
     s[5] = 0x00;
     memcpy(&s[2], &voltageSensVal, sizeof(voltageSensVal));
 #ifdef DEBUG_MODE
-    Serial.print("[PRES]\tSensor raw value: ");
+    Serial.print("[VOLT]\tSensor raw value: ");
     Serial.println(voltageSensVal);
 #endif
     VOLT_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
@@ -650,7 +650,7 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
 #ifdef DEBUG_MODE
     Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!pressure_n && !n_before) {
-    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of ph!");
+    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of pressure!");
   } else if (pressure_n && n_before) {
     Serial.println("[ERROR]\tIllegal event: launching another thread of pressure!");
   }
@@ -694,11 +694,11 @@ void BLEwriteVOLTHandler(BLEDevice central, BLECharacteristic characteristic) {
 #ifdef DEBUG_MODE
     Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!voltage_n && !n_before) {
-    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of ph!");
+    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of voltage!");
   } else if (voltage_n && n_before) {
-    Serial.println("[ERROR]\tIllegal event: launching another thread of pressure!");
+    Serial.println("[ERROR]\tIllegal event: launching another thread of voltage!");
   }
-  Serial.print("[DEBUG]\tdelay_pressure = ");
+  Serial.print("[DEBUG]\tdelay_voltage = ");
   Serial.println(del_voltage);
 #else
   }
@@ -749,13 +749,13 @@ void analogSensorMux() {
       pressure_conn = false;
     }
     if (370 < _a0_sens_id && _a0_sens_id < 410) {
-      pressureAnalogIn = A0;
-      pressure_conn = true;
+      voltageAnalogIn = A0;
+      voltage_conn = true;
     } else if (370 < _a1_sens_id && _a1_sens_id < 410) {
-      pressureAnalogIn = A1;
-      pressure_conn = true;
+      voltageAnalogIn = A1;
+      voltage_conn = true;
     } else {
-      pressure_conn = false;
+      voltage_conn = false;
     }
     ThisThread::sleep_for(100);
   }
