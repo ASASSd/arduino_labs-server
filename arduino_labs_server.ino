@@ -1,7 +1,7 @@
 //comment line below to disable debug mode
 #define DEBUG_MODE
 
-#define SOFTVERSION "v0.7.2-debug"
+#define SOFTVERSION "v0.8-debug"
 
 //    ANALOG magnet includes    //
 
