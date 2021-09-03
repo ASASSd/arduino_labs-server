@@ -450,6 +450,7 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
       delete A1Thread;
     }
   } else if (magnet_n && !n_before && !magnet_conn) {
+    MAGNET_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
     MAGNET_SEND_CHR_UID.setValue("");
     magnet_n = 0;
 #ifdef DEBUG_MODE
@@ -553,6 +554,7 @@ void BLEwriteTDSHandler(BLEDevice central, BLECharacteristic characteristic) {
       delete A1Thread;
     }
   } else if (tds_n && !n_before && !tds_conn) {
+    TDS_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
     TDS_SEND_CHR_UID.setValue("");
     tds_n = 0;
 #ifdef DEBUG_MODE
@@ -597,6 +599,7 @@ void BLEwritePHHandler(BLEDevice central, BLECharacteristic characteristic) {
       delete A1Thread;
     }
   } else if (ph_n && !n_before && !ph_conn) {
+    PH_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
     PH_SEND_CHR_UID.setValue("");
     ph_n = 0;
 #ifdef DEBUG_MODE
@@ -641,6 +644,7 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
       delete A1Thread;
     }
   } else if (pressure_n && !n_before && !pressure_conn) {
+    MPX57000P_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
     MPX57000P_SEND_CHR_UID.setValue("");
     pressure_n = 0;
 #ifdef DEBUG_MODE
@@ -685,6 +689,7 @@ void BLEwriteVOLTHandler(BLEDevice central, BLECharacteristic characteristic) {
       delete A1Thread;
     }
   } else if (voltage_n && !n_before && !voltage_conn) {
+    VOLT_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
     VOLT_SEND_CHR_UID.setValue("");
     voltage_n = 0;
 #ifdef DEBUG_MODE
@@ -729,8 +734,8 @@ void BLEwriteCURRHandler(BLEDevice central, BLECharacteristic characteristic) {
       delete A1Thread;
     }
   } else if (current_n && !n_before && !current_conn) {
-    ACS712_SEND_CHR_UID.setValue("");
     ACS712_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
+    ACS712_SEND_CHR_UID.setValue("");
     current_n = 0;
 #ifdef DEBUG_MODE
     Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
