@@ -1,7 +1,7 @@
 //comment line below to disable debug mode
 #define DEBUG_MODE
-
-#define SOFTVERSION "v0.9-debug"
+#define DEBUG_SENS_MUX
+#define SOFTVERSION "v0.9.2-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -239,17 +239,15 @@ void bluxv30() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     Adafruit_BusIO_Register data_reg = Adafruit_BusIO_Register(&blux_i2c_obj, 0x00, 4, LSBFIRST);
-    uint32_t val;
+    uint32_t val = data_reg.read();
     uint8_t s[5] = {0,};
-    float lux;
-    val = data_reg.read();
-    lux = ((float)val * 1.4) / 1000.0;
+    float lux = ((float)val * 1.4) / 1000.0;
     memcpy(&s[1], &lux, sizeof(lux));
-    BLUX_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
 #ifdef DEBUG_MODE
     Serial.print("[LUX]\tSensor value: ");
     Serial.println(lux);
 #endif
+    BLUX_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_bluxv30 - (time2 - time1));
   }
@@ -785,10 +783,10 @@ void analogSensorMux() {
     } else {
       ph_conn = false;
     }
-    if (245 < _a0_sens_id && _a0_sens_id < 275) {
+    if (245 < _a0_sens_id && _a0_sens_id < 290) {
       pressureAnalogIn = A0;
       pressure_conn = true;
-    } else if (245 < _a1_sens_id && _a1_sens_id < 275) {
+    } else if (245 < _a1_sens_id && _a1_sens_id < 290) {
       pressureAnalogIn = A1;
       pressure_conn = true;
     } else {
@@ -803,7 +801,16 @@ void analogSensorMux() {
     } else {
       voltage_conn = false;
     }
-#ifdef DEBUG_OUTPUT
+    if (490 < _a0_sens_id && _a0_sens_id < 530) {
+      voltageAnalogIn = A0;
+      voltage_conn = true;
+    } else if (490 < _a1_sens_id && _a1_sens_id < 530) {
+      voltageAnalogIn = A1;
+      voltage_conn = true;
+    } else {
+      voltage_conn = false;
+    }
+#ifdef DEBUG_SENS_MUX
     Serial.print("a0_sens_id: ");
     Serial.print(_a0_sens_id);
     Serial.print("  a1_sens_id: ");
