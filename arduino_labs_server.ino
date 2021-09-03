@@ -1,7 +1,9 @@
 //comment line below to disable debug mode
 #define DEBUG_MODE
+//comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
-#define SOFTVERSION "v0.9.2-debug"
+
+#define SOFTVERSION "v0.9.3-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
