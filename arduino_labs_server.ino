@@ -337,7 +337,7 @@ void current() {
     uint8_t s[6] = {0,};
     memcpy(&s[2], &currentSensVal, sizeof(currentSensVal));
 #ifdef DEBUG_MODE
-    Serial.print("[MAGN]\tSensor raw value: ");
+    Serial.print("[CURR]\tSensor raw value: ");
     Serial.println(currentSensVal);
 #endif
     ACS712_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
@@ -755,7 +755,7 @@ void analogSensorMux() {
   pinMode(A2, INPUT);
   pinMode(A3, INPUT);
   for (;;) {
-    int _a0_sens_id = analogRead(A2), _a1_sens_id = analogRead(A3);
+    uint16_t _a0_sens_id = analogRead(A2), _a1_sens_id = analogRead(A3);
     if (135 < _a0_sens_id && _a0_sens_id < 175) {
       magnetAnalogIn = A0;
       magnet_conn = true;
@@ -802,13 +802,13 @@ void analogSensorMux() {
       voltage_conn = false;
     }
     if (490 < _a0_sens_id && _a0_sens_id < 530) {
-      voltageAnalogIn = A0;
-      voltage_conn = true;
+      currentAnalogIn = A0;
+      current_conn = true;
     } else if (490 < _a1_sens_id && _a1_sens_id < 530) {
-      voltageAnalogIn = A1;
-      voltage_conn = true;
+      currentAnalogIn = A1;
+      current_conn = true;
     } else {
-      voltage_conn = false;
+      current_conn = false;
     }
 #ifdef DEBUG_SENS_MUX
     Serial.print("a0_sens_id: ");
