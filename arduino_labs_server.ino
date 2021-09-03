@@ -724,7 +724,7 @@ void BLEwriteCURRHandler(BLEDevice central, BLECharacteristic characteristic) {
       A1Thread->start(current);
     }
   } else if (!current_n && n_before) {
-    if (voltageAnalogIn == A0) {
+    if (currentAnalogIn == A0) {
       A0Thread->terminate();
       delete A0Thread;
     } else if (currentAnalogIn == A1) {
