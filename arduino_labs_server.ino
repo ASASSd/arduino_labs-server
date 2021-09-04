@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v0.9.3-debug"
+#define SOFTVERSION "v0.9.4-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -761,7 +761,7 @@ void analogSensorMux() {
     if (135 < _a0_sens_id && _a0_sens_id < 175) {
       magnetAnalogIn = A0;
       magnet_conn = true;
-    } else if (720 < _a1_sens_id && _a1_sens_id < 750) {
+    } else if (135 < _a1_sens_id && _a1_sens_id < 175) {
       magnetAnalogIn = A1;
       magnet_conn = true;
     } else {
