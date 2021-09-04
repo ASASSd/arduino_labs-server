@@ -249,18 +249,22 @@ void lsm9ds1() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     float xa, ya, za;
+    int32_t xa_int, ya_int, za_int;
     IMU.readAcceleration(xa, ya, za);
+    xa_int = (int32_t)(xa * 9.8 * 16384);
+    ya_int = (int32_t)(ya * 9.8 * 16384);
+    za_int = (int32_t)(za * 9.8 * 16384);
     uint8_t s[17] = {0,};
-    memcpy(&s[1], (unsigned char*) (&xa), 4);
-    memcpy(&s[5], (unsigned char*) (&ya), 4);
-    memcpy(&s[9], (unsigned char*) (&za), 4);
+    memcpy(&s[1], &xa_int, 4);
+    memcpy(&s[5], &ya_int, 4);
+    memcpy(&s[9], &za_int, 4);
 #ifdef DEBUG_MODE
     Serial.print("[IMU]\tAcceleration value: x: ");
-    Serial.print(xa);
+    Serial.print(xa_int);
     Serial.print(", y: ");
-    Serial.print(ya);
+    Serial.print(ya_int);
     Serial.print(", z: ");
-    Serial.println(za);
+    Serial.println(za_int);
 #endif
     IMU_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
