@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v0.10.1-debug"
+#define SOFTVERSION "v0.10.2-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -251,9 +251,9 @@ void lsm9ds1() {
     float xa, ya, za;
     IMU.readAcceleration(xa, ya, za);
     uint8_t s[17] = {0,};
-    memcpy(&s[1], (uint8_t*) (&xa), 4);
-    memcpy(&s[5], (uint8_t*) (&ya), 4);
-    memcpy(&s[9], (uint8_t*) (&za), 4);
+    memcpy(&s[1], (unsigned char*) (&xa), 4);
+    memcpy(&s[5], (unsigned char*) (&ya), 4);
+    memcpy(&s[9], (unsigned char*) (&za), 4);
 #ifdef DEBUG_MODE
     Serial.print("[IMU]\tAcceleration value: x: ");
     Serial.print(xa);
