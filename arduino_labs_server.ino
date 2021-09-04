@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v0.10-debug"
+#define SOFTVERSION "v0.10.1-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -255,8 +255,12 @@ void lsm9ds1() {
     memcpy(&s[5], (uint8_t*) (&ya), 4);
     memcpy(&s[9], (uint8_t*) (&za), 4);
 #ifdef DEBUG_MODE
-    Serial.print("[IMU]\tSensor value: ");
-    Serial.println(x);
+    Serial.print("[IMU]\tAcceleration value: x: ");
+    Serial.print(xa);
+    Serial.print(", y: ");
+    Serial.print(ya);
+    Serial.print(", z: ");
+    Serial.println(za);
 #endif
     IMU_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
@@ -468,7 +472,7 @@ void BLEwriteIMUHandler(BLEDevice central, BLECharacteristic characteristic) {
     imuThread->start(lsm9ds1);
   } else if (!imu_n && n_before) {
     imuThread->terminate();
-    delete tcs34725Thread;
+    delete imuThread;
   }
 #ifdef DEBUG_MODE
   else if (!imu_n && !n_before) {
