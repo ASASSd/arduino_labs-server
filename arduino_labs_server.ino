@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v0.9.4-debug"
+#define SOFTVERSION "v0.10-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -66,9 +66,12 @@ BLECharacteristic VOLT_SEND_CHR_UID("EB0C9C2F-CD83-4460-8AC5-33DDAB36A393", BLER
 BLECharacteristic VOLT_NOTIFY_CHR_UID("3C04F8A5-C302-468F-975B-E0EFD4FF2DD4", BLERead | BLENotify, 6, true);
 BLECharacteristic ACS712_SEND_CHR_UID("9B69DE8C-B847-4F81-A3E6-9D6998740D15", BLERead | BLEWrite, 5, true);
 BLECharacteristic ACS712_NOTIFY_CHR_UID("A300379E-2934-43F7-BA6D-AECF4CF6605B", BLERead | BLENotify, 6, true);
-uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0,
+BLECharacteristic IMU_SEND_CHR_UID("8F89213C-97EE-4331-8C1D-A60501CB44F1", BLERead | BLEWrite, 5, true);
+BLECharacteristic IMU_NOTIFY_CHR_UID("00C31D7F-FDD6-422F-AC87-E4C8EB2F4A52", BLERead | BLENotify, 17, true);
+uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0,
         bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0, current_n = 0;
-bool magnet_conn = false, voltage_conn = false, tds_conn = false, ph_conn = false, pressure_conn = false, current_conn = false;
+bool magnet_conn = false, voltage_conn = false, tds_conn = false, ph_conn = false, 
+        pressure_conn = false, current_conn = false;
 
 //      DS18B20 includes      //
 
@@ -84,6 +87,11 @@ uint32_t del_ds18b20 = 1000;
 #include "Adafruit_TCS34725.h"
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
 uint32_t del_tcs34725 = 1000;
+
+//    LSM9DS1 includes    //
+
+#include <Arduino_LSM9DS1.h>
+uint32_t del_imu = 1000;
 
 //      MAX31855 includes     //
 
@@ -133,6 +141,7 @@ Thread* ds18b20Thread;
 Thread* A0Thread;
 Thread* A1Thread;
 Thread* bluxv30Thread;
+Thread* imuThread;
 
 //routine for thermocouple ---------------------------------------------------
 
@@ -231,6 +240,27 @@ void tds() {
     TDS_NOTIFY_CHR_UID.writeValue(s, 6);
     uint32_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_tds - (time2 - time1));
+  }
+}
+//routine for LSM9DS1 sensor -------------------------------------------------
+
+void lsm9ds1() {
+  IMU.begin();
+  for (;;) {
+    uint32_t time1 = micros() / 1000;
+    float xa, ya, za;
+    IMU.readAcceleration(xa, ya, za);
+    uint8_t s[17] = {0,};
+    memcpy(&s[1], (uint8_t*) (&xa), 4);
+    memcpy(&s[5], (uint8_t*) (&ya), 4);
+    memcpy(&s[9], (uint8_t*) (&za), 4);
+#ifdef DEBUG_MODE
+    Serial.print("[IMU]\tSensor value: ");
+    Serial.println(x);
+#endif
+    IMU_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
+    uint32_t time2 = micros() / 1000;
+    ThisThread::sleep_for(del_imu - (time2 - time1));
   }
 }
 
@@ -414,11 +444,40 @@ void BLEwriteTCS34725Handler(BLEDevice central, BLECharacteristic characteristic
 #ifdef DEBUG_MODE
   else if (!tcs34725_n && !n_before) {
     Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of tcs34725!");
-  } else if (tcs34725 && n_before) {
+  } else if (tcs34725_n && n_before) {
     Serial.println("[ERROR]\tIllegal event: launching another thread of tcs34725!");
   }
   Serial.print("[DEBUG]\tdelay_tcs34725 = ");
   Serial.println(del_tcs34725);
+#endif
+}
+
+void BLEwriteIMUHandler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
+  Serial.println("[DEBUG]\tWrite event");
+#endif
+  uint8_t n_before = imu_n;
+  uint8_t s[5];
+  for (uint8_t i = 0; i < 5; i++) {
+    s[i] = (uint8_t)IMU_SEND_CHR_UID.value()[i];
+  }
+  imu_n = s[0];
+  del_imu = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
+  if (imu_n && !n_before) {
+    imuThread = new Thread;
+    imuThread->start(lsm9ds1);
+  } else if (!imu_n && n_before) {
+    imuThread->terminate();
+    delete tcs34725Thread;
+  }
+#ifdef DEBUG_MODE
+  else if (!imu_n && !n_before) {
+    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of lsm9ds1!");
+  } else if (imu_n && n_before) {
+    Serial.println("[ERROR]\tIllegal event: launching another thread of lsm9ds1!");
+  }
+  Serial.print("[DEBUG]\tdelay_imu = ");
+  Serial.println(del_imu);
 #endif
 }
 
@@ -858,6 +917,8 @@ void setup() {
     labService.addCharacteristic(VOLT_NOTIFY_CHR_UID);
     labService.addCharacteristic(ACS712_SEND_CHR_UID);
     labService.addCharacteristic(ACS712_NOTIFY_CHR_UID);
+    labService.addCharacteristic(IMU_SEND_CHR_UID);
+    labService.addCharacteristic(IMU_NOTIFY_CHR_UID);
     BLE.addService(labService);
     BLE.setEventHandler(BLEConnected, BLEconnectHandler);
     BLE.setEventHandler(BLEDisconnected, BLEdisconnectHandler);
@@ -871,6 +932,7 @@ void setup() {
     MPX57000P_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwritePRESHandler);
     VOLT_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteVOLTHandler);
     ACS712_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteCURRHandler);
+    IMU_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteIMUHandler);
     DS18B20_SEND_CHR_UID.setValue("");
     DS18B20_NOTIFY_CHR_UID.setValue("");
     TCS34725_SEND_CHR_UID.setValue("");
@@ -891,6 +953,8 @@ void setup() {
     VOLT_NOTIFY_CHR_UID.setValue("");
     ACS712_SEND_CHR_UID.setValue("");
     ACS712_NOTIFY_CHR_UID.setValue("");
+    IMU_SEND_CHR_UID.setValue("");
+    IMU_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
 #ifdef DEBUG_MODE
     Serial.println("DONE.");
