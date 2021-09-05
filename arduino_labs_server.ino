@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v0.10.3-debug"
+#define SOFTVERSION "v1.0-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -68,7 +68,9 @@ BLECharacteristic ACS712_SEND_CHR_UID("9B69DE8C-B847-4F81-A3E6-9D6998740D15", BL
 BLECharacteristic ACS712_NOTIFY_CHR_UID("A300379E-2934-43F7-BA6D-AECF4CF6605B", BLERead | BLENotify, 6, true);
 BLECharacteristic IMU_SEND_CHR_UID("8F89213C-97EE-4331-8C1D-A60501CB44F1", BLERead | BLEWrite, 5, true);
 BLECharacteristic IMU_NOTIFY_CHR_UID("00C31D7F-FDD6-422F-AC87-E4C8EB2F4A52", BLERead | BLENotify, 17, true);
-uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0,
+BLECharacteristic HTS_SEND_CHR_UID("03BF53D8-2F5E-45DB-9F52-9FD737BF9605", BLERead | BLEWrite, 5, true);
+BLECharacteristic HTS_NOTIFY_CHR_UID("7C41E7D8-EF7C-4B11-A401-49ACA64F5962", BLERead | BLENotify, 9, true);
+uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0, hts221_n = 0,
         bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0, current_n = 0;
 bool magnet_conn = false, voltage_conn = false, tds_conn = false, ph_conn = false, 
         pressure_conn = false, current_conn = false;
@@ -92,6 +94,11 @@ uint32_t del_tcs34725 = 1000;
 
 #include <Arduino_LSM9DS1.h>
 uint32_t del_imu = 1000;
+
+//    HTS221 includes   //
+
+#include <Arduino_HTS221.h>
+uint32_t del_hts221 = 1000;
 
 //      MAX31855 includes     //
 
@@ -142,6 +149,7 @@ Thread* A0Thread;
 Thread* A1Thread;
 Thread* bluxv30Thread;
 Thread* imuThread;
+Thread* hts221Thread;
 
 //routine for thermocouple ---------------------------------------------------
 
@@ -242,6 +250,29 @@ void tds() {
     ThisThread::sleep_for(del_tds - (time2 - time1));
   }
 }
+//routine for HTS221 sensor --------------------------------------------------
+
+void hts221() {
+  HTS.begin();
+  for (;;) {
+    uint32_t time1 = micros() / 1000;
+    float temp = HTS.readTemperature(), 
+         humid = HTS.readHumidity();    
+    uint8_t s[9] = {0,};
+    memcpy(&s[1], (uint8_t*)&temp, 4);
+    memcpy(&s[5], (uint8_t*)&humid, 4);
+#ifdef DEBUG_MODE
+    Serial.print("[HTS]\tSensor value: temp: ");
+    Serial.print(temp);
+    Serial.print(", humid: ");
+    Serial.println(humid);
+#endif
+    HTS_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
+    uint32_t time2 = micros() / 1000;
+    ThisThread::sleep_for(del_hts221 - (time2 - time1));
+  }
+}
+
 //routine for LSM9DS1 sensor -------------------------------------------------
 
 void lsm9ds1() {
@@ -486,6 +517,35 @@ void BLEwriteIMUHandler(BLEDevice central, BLECharacteristic characteristic) {
   }
   Serial.print("[DEBUG]\tdelay_imu = ");
   Serial.println(del_imu);
+#endif
+}
+
+void BLEwriteHTS221Handler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
+  Serial.println("[DEBUG]\tWrite event");
+#endif
+  uint8_t n_before = hts221_n;
+  uint8_t s[5];
+  for (uint8_t i = 0; i < 5; i++) {
+    s[i] = (uint8_t)HTS_SEND_CHR_UID.value()[i];
+  }
+  hts221_n = s[0];
+  del_hts221 = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
+  if (hts221_n && !n_before) {
+    hts221Thread = new Thread;
+    hts221Thread->start(hts221);
+  } else if (!hts221_n && n_before) {
+    hts221Thread->terminate();
+    delete hts221Thread;
+  }
+#ifdef DEBUG_MODE
+  else if (!hts221_n && !n_before) {
+    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of hts221!");
+  } else if (hts221_n && n_before) {
+    Serial.println("[ERROR]\tIllegal event: launching another thread of hts221!");
+  }
+  Serial.print("[DEBUG]\tdelay_hts221 = ");
+  Serial.println(del_hts221);
 #endif
 }
 
@@ -904,7 +964,6 @@ void setup() {
     Serial.print("[DEBUG]\tLoading BLE name and service... ");
     BLE.setLocalName("LAB33");
     BLE.setAdvertisedService(labService);
-    //here we should add characteristics to our service
     labService.addCharacteristic(DS18B20_SEND_CHR_UID);
     labService.addCharacteristic(DS18B20_NOTIFY_CHR_UID);
     labService.addCharacteristic(TCS34725_SEND_CHR_UID);
@@ -927,6 +986,8 @@ void setup() {
     labService.addCharacteristic(ACS712_NOTIFY_CHR_UID);
     labService.addCharacteristic(IMU_SEND_CHR_UID);
     labService.addCharacteristic(IMU_NOTIFY_CHR_UID);
+    labService.addCharacteristic(HTS_SEND_CHR_UID);
+    labService.addCharacteristic(HTS_NOTIFY_CHR_UID);
     BLE.addService(labService);
     BLE.setEventHandler(BLEConnected, BLEconnectHandler);
     BLE.setEventHandler(BLEDisconnected, BLEdisconnectHandler);
@@ -941,6 +1002,7 @@ void setup() {
     VOLT_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteVOLTHandler);
     ACS712_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteCURRHandler);
     IMU_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteIMUHandler);
+    HTS_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteHTS221Handler);
     DS18B20_SEND_CHR_UID.setValue("");
     DS18B20_NOTIFY_CHR_UID.setValue("");
     TCS34725_SEND_CHR_UID.setValue("");
@@ -963,6 +1025,8 @@ void setup() {
     ACS712_NOTIFY_CHR_UID.setValue("");
     IMU_SEND_CHR_UID.setValue("");
     IMU_NOTIFY_CHR_UID.setValue("");
+    HTS_SEND_CHR_UID.setValue("");
+    HTS_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
 #ifdef DEBUG_MODE
     Serial.println("DONE.");
