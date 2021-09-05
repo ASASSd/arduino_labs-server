@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.0-debug"
+#define SOFTVERSION "v1.0.2-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -67,13 +67,13 @@ BLECharacteristic VOLT_NOTIFY_CHR_UID("3C04F8A5-C302-468F-975B-E0EFD4FF2DD4", BL
 BLECharacteristic ACS712_SEND_CHR_UID("9B69DE8C-B847-4F81-A3E6-9D6998740D15", BLERead | BLEWrite, 5, true);
 BLECharacteristic ACS712_NOTIFY_CHR_UID("A300379E-2934-43F7-BA6D-AECF4CF6605B", BLERead | BLENotify, 6, true);
 BLECharacteristic IMU_SEND_CHR_UID("8F89213C-97EE-4331-8C1D-A60501CB44F1", BLERead | BLEWrite, 5, true);
-BLECharacteristic IMU_NOTIFY_CHR_UID("00C31D7F-FDD6-422F-AC87-E4C8EB2F4A52", BLERead | BLENotify, 17, true);
+BLECharacteristic IMU_NOTIFY_CHR_UID("00C31D7F-FDD6-422F-AC87-E4C8EB2F4A52", BLERead | BLENotify, 13, true);
 BLECharacteristic HTS_SEND_CHR_UID("03BF53D8-2F5E-45DB-9F52-9FD737BF9605", BLERead | BLEWrite, 5, true);
 BLECharacteristic HTS_NOTIFY_CHR_UID("7C41E7D8-EF7C-4B11-A401-49ACA64F5962", BLERead | BLENotify, 9, true);
 uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0, hts221_n = 0,
         bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0, current_n = 0;
-bool magnet_conn = false, voltage_conn = false, tds_conn = false, ph_conn = false, 
-        pressure_conn = false, current_conn = false;
+bool magnet_conn = false, voltage_conn = false, tds_conn = false,
+     ph_conn = false, pressure_conn = false, current_conn = false;
 
 //      DS18B20 includes      //
 
@@ -256,11 +256,11 @@ void hts221() {
   HTS.begin();
   for (;;) {
     uint32_t time1 = micros() / 1000;
-    float temp = HTS.readTemperature(), 
-         humid = HTS.readHumidity();    
+    float temp = HTS.readTemperature(),
+         humid = HTS.readHumidity();
     uint8_t s[9] = {0,};
-    memcpy(&s[1], (uint8_t*)&temp, 4);
-    memcpy(&s[5], (uint8_t*)&humid, 4);
+    memcpy(&s[1], (uint8_t*) &temp, 4);
+    memcpy(&s[5], (uint8_t*) &humid, 4);
 #ifdef DEBUG_MODE
     Serial.print("[HTS]\tSensor value: temp: ");
     Serial.print(temp);
@@ -280,22 +280,18 @@ void lsm9ds1() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     float xa, ya, za;
-    int32_t xa_int, ya_int, za_int;
     IMU.readAcceleration(xa, ya, za);
-    xa_int = (int32_t)(xa * 9.8 * 16384);
-    ya_int = (int32_t)(ya * 9.8 * 16384);
-    za_int = (int32_t)(za * 9.8 * 16384);
-    uint8_t s[17] = {0,};
-    memcpy(&s[1], &xa_int, 4);
-    memcpy(&s[5], &ya_int, 4);
-    memcpy(&s[9], &za_int, 4);
+    uint8_t s[13] = {0xFF, 0,};
+    memcpy(&s[1], (uint8_t*) &xa, 4);
+    memcpy(&s[5], (uint8_t*) &ya, 4);
+    memcpy(&s[9], (uint8_t*) &za, 4);
 #ifdef DEBUG_MODE
     Serial.print("[IMU]\tAcceleration value: x: ");
-    Serial.print(xa_int);
+    Serial.print(xa);
     Serial.print(", y: ");
-    Serial.print(ya_int);
+    Serial.print(ya);
     Serial.print(", z: ");
-    Serial.println(za_int);
+    Serial.println(za);
 #endif
     IMU_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
