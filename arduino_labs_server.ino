@@ -2,8 +2,8 @@
 #define DEBUG_MODE
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
-#define MAXIMWIRE_EXTERNAL_PULLUP
-#define SOFTVERSION "v1.2-debug"
+
+#define SOFTVERSION "v1.2.1-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -79,6 +79,7 @@ bool magnet_conn = false, voltage_conn = false, tds_conn = false,
 
 //      DS18B20 includes      //
 
+#define MAXIMWIRE_EXTERNAL_PULLUP
 #include <MaximWire.h>
 MaximWire::Bus line(7);
 MaximWire::DS18B20 dallas;
@@ -104,7 +105,7 @@ uint32_t del_hts221 = 1000;
 //    LPS22HB includes    //
 
 #include <Arduino_LPS22HB.h>
-uint32_t del_lps22hb = 1000; 
+uint32_t del_lps22hb = 1000;
 
 //      MAX31855 includes     //
 
@@ -186,6 +187,7 @@ void max31855() {
 //routine for ds18b20 temperature sensor -------------------------------------
 
 void ds18b20() {
+  line.Discover().FindNextDevice(dallas);
   for (;;) {
     uint32_t time1 = micros() / 1000;
     float temp = dallas.GetTemperature<float>(line);
@@ -195,9 +197,9 @@ void ds18b20() {
     Serial.print("[DS18]\tSensor value: ");
     Serial.println(temp);
 #endif
+    dallas.Update(line);
     DS18B20_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    dallas.Update(line);
     ThisThread::sleep_for(del_ds18b20 - (time2 - time1));
   }
 }
@@ -259,7 +261,7 @@ void tds() {
 
 //routine for LPS22HB sensor -------------------------------------------------
 
-void lps22hb(){
+void lps22hb() {
   BARO.begin();
   for (;;) {
     uint32_t time1 = micros() / 1000;
@@ -284,7 +286,7 @@ void hts221() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     float temp = HTS.readTemperature(),
-         humid = HTS.readHumidity();
+          humid = HTS.readHumidity();
     uint8_t s[9] = {0,};
     memcpy(&s[1], (uint8_t*) &temp, 4);
     memcpy(&s[5], (uint8_t*) &humid, 4);
