@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.1-debug"
+#define SOFTVERSION "v1.1.1-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -246,7 +246,7 @@ void tds() {
   pinMode(tdsAnalogIn, INPUT);
   for (;;) {
     uint32_t time1 = micros() / 1000;
-    uint8_t s[6] = {0,};
+    uint8_t s[6] = {0xFF, 0,};
     tdsSensVal = analogRead(tdsAnalogIn);
     memcpy(&s[2], &tdsSensVal, sizeof(tdsSensVal));
 #ifdef DEBUG_MODE
@@ -355,7 +355,7 @@ void ph() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     phSensVal = analogRead(phAnalogIn);
-    uint8_t s[6] = {0,};
+    uint8_t s[6] = {0xFF, 0,};
     memcpy(&s[2], &phSensVal, sizeof(phSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[PH]\tSensor raw value: ");
@@ -374,7 +374,7 @@ void pressure() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     pressureSensVal = analogRead(pressureAnalogIn);
-    uint8_t s[6] = {0,};
+    uint8_t s[6] = {0xFF, 0,};
     memcpy(&s[2], &pressureSensVal, sizeof(pressureSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[PRES]\tSensor raw value: ");
@@ -392,7 +392,7 @@ void voltage() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     voltageSensVal = analogRead(voltageAnalogIn);
-    uint8_t s[6] = {0,};
+    uint8_t s[6] = {0xFF, 0,};
     memcpy(&s[2], &voltageSensVal, sizeof(voltageSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[VOLT]\tSensor raw value: ");
@@ -411,7 +411,7 @@ void magnet() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     magnetSensVal = analogRead(magnetAnalogIn);
-    uint8_t s[6] = {0,};
+    uint8_t s[6] = {0xFF, 0,};
     memcpy(&s[2], &magnetSensVal, sizeof(magnetSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[MAGN]\tSensor raw value: ");
@@ -430,7 +430,7 @@ void current() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     currentSensVal = analogRead(currentAnalogIn);
-    uint8_t s[6] = {0,};
+    uint8_t s[6] = {0xFF, 0,};
     memcpy(&s[2], &currentSensVal, sizeof(currentSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[CURR]\tSensor raw value: ");
