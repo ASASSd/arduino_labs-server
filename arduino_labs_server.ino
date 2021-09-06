@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.1.1-debug"
+#define SOFTVERSION "v1.2-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -79,10 +79,9 @@ bool magnet_conn = false, voltage_conn = false, tds_conn = false,
 
 //      DS18B20 includes      //
 
-#include <OneWire.h>
-#include <DallasTemperature.h>
-OneWire oneWire(7);  //for ds18b20
-DallasTemperature dallas(&oneWire);
+#include <MaximWire.h>
+MaximWire::Bus line(7);
+MaximWire::DS18B20 dallas;
 uint32_t del_ds18b20 = 1000;
 
 //      TCS34725 includes     //
@@ -187,11 +186,9 @@ void max31855() {
 //routine for ds18b20 temperature sensor -------------------------------------
 
 void ds18b20() {
-  dallas.begin();
   for (;;) {
     uint32_t time1 = micros() / 1000;
-    dallas.requestTemperatures();      //read temp from ds18b20
-    float temp = dallas.getTempCByIndex(0);
+    float temp = dallas.GetTemperature<float>(line);
     uint8_t s[5] = {0,};
     memcpy(&s[1], (unsigned char*) (&temp),  4);
 #ifdef DEBUG_MODE
@@ -200,6 +197,7 @@ void ds18b20() {
 #endif
     DS18B20_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
+    dallas.Update(line);
     ThisThread::sleep_for(del_ds18b20 - (time2 - time1));
   }
 }
