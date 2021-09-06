@@ -191,13 +191,13 @@ void ds18b20() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     float temp = dallas.GetTemperature<float>(line);
+    dallas.Update(line);
     uint8_t s[5] = {0,};
     memcpy(&s[1], (unsigned char*) (&temp),  4);
 #ifdef DEBUG_MODE
     Serial.print("[DS18]\tSensor value: ");
     Serial.println(temp);
 #endif
-    dallas.Update(line);
     DS18B20_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
     ThisThread::sleep_for(del_ds18b20 - (time2 - time1));
