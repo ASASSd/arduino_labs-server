@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.3-debug"
+#define SOFTVERSION "v1.3.1-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -83,7 +83,7 @@ BLECharacteristic THERM_NOTIFY_CHR_UID("a8ffefd0-ab5a-4345-8cc6-97cf4f6e6ecb", B
 uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0, hts221_n = 0, therm_n = 0,
         bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0, current_n = 0, lps22hb_n = 0;
 bool magnet_conn = false, voltage_conn = false, tds_conn = false, therm_conn = false,
-        ph_conn = false, pressure_conn = false, current_conn = false;
+     ph_conn = false, pressure_conn = false, current_conn = false;
 
 //      DS18B20 includes      //
 
@@ -297,12 +297,20 @@ void lsm9ds1() {
   IMU.begin();
   for (;;) {
     uint32_t time1 = micros() / 1000;
-    float xa, ya, za;
+    float xa, ya, za, xg, yg, zg, xm, ym, zm;
     IMU.readAcceleration(xa, ya, za);
-    uint8_t s[13] = {0xFF, 0,};
+    IMU.readGyroscope(xg, yg, zg);
+    IMU.readMagneticField(xm, ym, zm);
+    uint8_t s[37] = {0xFF, 0,};
     memcpy(&s[1], (uint8_t*) &xa, 4);
     memcpy(&s[5], (uint8_t*) &ya, 4);
     memcpy(&s[9], (uint8_t*) &za, 4);
+    memcpy(&s[13], (uint8_t*) &xg, 4);
+    memcpy(&s[17], (uint8_t*) &yg, 4);
+    memcpy(&s[21], (uint8_t*) &zg, 4);
+    memcpy(&s[25], (uint8_t*) &xm, 4);
+    memcpy(&s[29], (uint8_t*) &ym, 4);
+    memcpy(&s[33], (uint8_t*) &zm, 4);
 #ifdef DEBUG_MODE
     Serial.print("[IMU]\tAcceleration value: x: ");
     Serial.print(xa);
@@ -310,6 +318,18 @@ void lsm9ds1() {
     Serial.print(ya);
     Serial.print(", z: ");
     Serial.println(za);
+    Serial.print("[IMU]\tGyroscope value: x: ");
+    Serial.print(xg);
+    Serial.print(", y: ");
+    Serial.print(yg);
+    Serial.print(", z: ");
+    Serial.println(zg);
+    Serial.print("[IMU]\tMagnetic Field value: x: ");
+    Serial.print(xm);
+    Serial.print(", y: ");
+    Serial.print(ym);
+    Serial.print(", z: ");
+    Serial.println(zm);
 #endif
     IMU_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
