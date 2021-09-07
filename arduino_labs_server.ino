@@ -1,5 +1,5 @@
 //comment line below to disable debug mode
-//#define DEBUG_MODE
+#define DEBUG_MODE
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
