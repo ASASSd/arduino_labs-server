@@ -1066,10 +1066,10 @@ void analogSensorMux() {
     } else {
       current_conn = false;
     }
-    if (820 < a0_sens_id && a0_sens_id < 870) {
+    if (810 < a0_sens_id && a0_sens_id < 880) {
       thermAnalogIn = A0;
       therm_conn = true;
-    } else if (820 < at_sens_id && at_sens_id < 870) {
+    } else if (810 < at_sens_id && at_sens_id < 880) {
       thermAnalogIn = A1;
       therm_conn = true;
     } else {
