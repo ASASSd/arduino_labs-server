@@ -296,7 +296,7 @@ void hts221() {
 void lsm9ds1() {
   IMU.begin();
   for (;;) {
-    uint32_t time1 = micros() / 1000;
+    uint32_t time1 = millis();
     float xa, ya, za, xg, yg, zg, xm, ym, zm;
     IMU.readAcceleration(xa, ya, za);
     IMU.readGyroscope(xg, yg, zg);
@@ -332,7 +332,7 @@ void lsm9ds1() {
     Serial.println(zm);
 #endif
     IMU_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
-    uint32_t time2 = micros() / 1000;
+    uint32_t time2 = millis();
     ThisThread::sleep_for(del_imu - (time2 - time1));
   }
 }
