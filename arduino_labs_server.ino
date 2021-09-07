@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.3.1-debug"
+#define SOFTVERSION "v1.3.2-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -1144,6 +1144,7 @@ void setup() {
     IMU_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteIMUHandler);
     HTS_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteHTS221Handler);
     LPS22HB_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteLPS22HBHandler);
+    THERM_SEND_CHR_UID.setEventHandler(BLEWritten, BLEwriteTHERMHandler);
     DS18B20_SEND_CHR_UID.setValue("");
     DS18B20_NOTIFY_CHR_UID.setValue("");
     TCS34725_SEND_CHR_UID.setValue("");
