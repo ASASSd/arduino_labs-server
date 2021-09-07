@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.2.2-debug"
+#define SOFTVERSION "v1.3-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -23,6 +23,12 @@ uint32_t del_pressure = 1000;
 uint8_t tdsAnalogIn = A0;
 uint16_t tdsSensVal = 0;
 uint32_t del_tds = 1000;
+
+//    ANALOG thermistor   //
+
+uint8_t thermAnalogIn = A0;
+uint16_t thermSensVal = 0;
+uint32_t del_therm = 1000;
 
 //    ANALOG PH includes    //
 
@@ -67,15 +73,17 @@ BLECharacteristic VOLT_NOTIFY_CHR_UID("3C04F8A5-C302-468F-975B-E0EFD4FF2DD4", BL
 BLECharacteristic ACS712_SEND_CHR_UID("9B69DE8C-B847-4F81-A3E6-9D6998740D15", BLERead | BLEWrite, 5, true);
 BLECharacteristic ACS712_NOTIFY_CHR_UID("A300379E-2934-43F7-BA6D-AECF4CF6605B", BLERead | BLENotify, 6, true);
 BLECharacteristic IMU_SEND_CHR_UID("8F89213C-97EE-4331-8C1D-A60501CB44F1", BLERead | BLEWrite, 5, true);
-BLECharacteristic IMU_NOTIFY_CHR_UID("00C31D7F-FDD6-422F-AC87-E4C8EB2F4A52", BLERead | BLENotify, 13, true);
+BLECharacteristic IMU_NOTIFY_CHR_UID("00C31D7F-FDD6-422F-AC87-E4C8EB2F4A52", BLERead | BLENotify, 37, true);
 BLECharacteristic HTS_SEND_CHR_UID("03BF53D8-2F5E-45DB-9F52-9FD737BF9605", BLERead | BLEWrite, 5, true);
 BLECharacteristic HTS_NOTIFY_CHR_UID("7C41E7D8-EF7C-4B11-A401-49ACA64F5962", BLERead | BLENotify, 9, true);
 BLECharacteristic LPS22HB_SEND_CHR_UID("0FBA45BE-2DFE-45FF-9F52-9FD737380605", BLERead | BLEWrite, 5, true);
 BLECharacteristic LPS22HB_NOTIFY_CHR_UID("FBF457D8-AF8B-4A22-A60F-49AFA64FA962", BLERead | BLENotify, 5, true);
-uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0, hts221_n = 0,
+BLECharacteristic THERM_SEND_CHR_UID("972f7de0-e9cb-4000-a466-c03da4b69dd0", BLERead | BLEWrite, 5, true);
+BLECharacteristic THERM_NOTIFY_CHR_UID("a8ffefd0-ab5a-4345-8cc6-97cf4f6e6ecb", BLERead | BLENotify, 6, true);
+uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0, hts221_n = 0, therm_n = 0,
         bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0, current_n = 0, lps22hb_n = 0;
-bool magnet_conn = false, voltage_conn = false, tds_conn = false,
-     ph_conn = false, pressure_conn = false, current_conn = false;
+bool magnet_conn = false, voltage_conn = false, tds_conn = false, therm_conn = false,
+        ph_conn = false, pressure_conn = false, current_conn = false;
 
 //      DS18B20 includes      //
 
@@ -111,27 +119,8 @@ uint32_t del_lps22hb = 1000;
 
 #include <SPI.h>
 #include "Adafruit_MAX31855.h"
-// Default connection is using software SPI, but comment and uncomment one of
-// the two examples below to switch between software SPI and hardware SPI:
-
-// Example creating a thermocouple instance with software SPI on any three
-// digital IO pins.
-//#define MAXDO   3
-//#define MAXCS   4
-//#define MAXCLK  5
-
-// initialize the Thermocouple
-//Adafruit_MAX31855 thermocouple(MAXCLK, MAXCS, MAXDO);
-
-// Example creating a thermocouple instance with hardware SPI
-// on a given CS pin.
 const uint8_t MAXCS = 10;
 Adafruit_MAX31855 thermocouple(MAXCS);
-
-// Example creating a thermocouple instance with hardware SPI
-// on SPI1 using specified CS pin.
-//#define MAXCS   10
-//Adafruit_MAX31855 thermocouple(MAXCS, SPI1);
 uint32_t del_max31855 = 1000;
 
 //      B-LUX-V30B includes     //
@@ -348,6 +337,25 @@ void bluxv30() {
     ThisThread::sleep_for(del_bluxv30 - (time2 - time1));
   }
 }
+//routine for analog thermistor  ---------------------------------------------
+
+void therm() {
+  pinMode(thermAnalogIn, INPUT);
+  for (;;) {
+    uint32_t time1 = millis();
+    thermSensVal = analogRead(thermAnalogIn);
+    uint8_t s[6] = {0xFF, 0,};
+    memcpy(&s[2], &thermSensVal, sizeof(thermSensVal));
+#ifdef DEBUG_MODE
+    Serial.print("[THERM]\tSensor raw value: ");
+    Serial.println(thermSensVal);
+#endif
+    THERM_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
+    uint32_t time2 = millis();
+    ThisThread::sleep_for(del_therm - (time2 - time1));
+  }
+}
+
 //routine for analog PH sensor -----------------------------------------------
 
 void ph() {
@@ -797,6 +805,51 @@ void BLEwritePHHandler(BLEDevice central, BLECharacteristic characteristic) {
 #endif
 }
 
+void BLEwriteTHERMHandler(BLEDevice central, BLECharacteristic characteristic) {
+#ifdef DEBUG_MODE
+  Serial.println("[DEBUG]\tWrite event");
+#endif
+  uint8_t n_before = therm_n;
+  uint8_t s[5];
+  for (uint8_t i = 0; i < 5; i++) {
+    s[i] = (uint8_t)THERM_SEND_CHR_UID.value()[i];
+  }
+  therm_n = s[0];
+  del_therm = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
+  if (therm_n && !n_before && therm_conn) {
+    if (thermAnalogIn == A0) {
+      A0Thread = new Thread;
+      A0Thread->start(therm);
+    } else if (thermAnalogIn == A1) {
+      A1Thread = new Thread;
+      A1Thread->start(therm);
+    }
+  } else if (!therm_n && n_before) {
+    if (thermAnalogIn == A0) {
+      A0Thread->terminate();
+      delete A0Thread;
+    } else if (thermAnalogIn == A1) {
+      A1Thread->terminate();
+      delete A1Thread;
+    }
+  } else if (therm_n && !n_before && !therm_conn) {
+    THERM_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
+    THERM_SEND_CHR_UID.setValue("");
+    therm_n = 0;
+#ifdef DEBUG_MODE
+    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
+  } else if (!therm_n && !n_before) {
+    Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of therm!");
+  } else if (therm_n && n_before) {
+    Serial.println("[ERROR]\tIllegal event: launching another thread of therm!");
+  }
+  Serial.print("[DEBUG]\tdelay_therm = ");
+  Serial.println(del_therm);
+#else
+  }
+#endif
+}
+
 void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
 #ifdef DEBUG_MODE
   Serial.println("[DEBUG]\tWrite event");
@@ -938,66 +991,75 @@ void analogSensorMux() {
   pinMode(A2, INPUT);
   pinMode(A3, INPUT);
   for (;;) {
-    uint16_t _a0_sens_id = analogRead(A2), _a1_sens_id = analogRead(A3);
-    if (135 < _a0_sens_id && _a0_sens_id < 175) {
+    uint16_t a0_sens_id = analogRead(A2), at_sens_id = analogRead(A3);
+    if (135 < a0_sens_id && a0_sens_id < 175) {
       magnetAnalogIn = A0;
       magnet_conn = true;
-    } else if (135 < _a1_sens_id && _a1_sens_id < 175) {
+    } else if (135 < at_sens_id && at_sens_id < 175) {
       magnetAnalogIn = A1;
       magnet_conn = true;
     } else {
       magnet_conn = false;
     }
-    if (750 < _a0_sens_id && _a0_sens_id < 780) {
+    if (750 < a0_sens_id && a0_sens_id < 780) {
       tdsAnalogIn = A0;
       tds_conn = true;
-    } else if (750 < _a1_sens_id && _a1_sens_id < 780) {
+    } else if (750 < at_sens_id && at_sens_id < 780) {
       tdsAnalogIn = A1;
       tds_conn = true;
     } else {
       tds_conn = false;
     }
-    if (660 < _a0_sens_id && _a0_sens_id < 690) {
+    if (660 < a0_sens_id && a0_sens_id < 690) {
       phAnalogIn = A0;
       ph_conn = true;
-    } else if (660 < _a1_sens_id && _a1_sens_id < 690) {
+    } else if (660 < at_sens_id && at_sens_id < 690) {
       phAnalogIn = A1;
       ph_conn = true;
     } else {
       ph_conn = false;
     }
-    if (245 < _a0_sens_id && _a0_sens_id < 290) {
+    if (245 < a0_sens_id && a0_sens_id < 290) {
       pressureAnalogIn = A0;
       pressure_conn = true;
-    } else if (245 < _a1_sens_id && _a1_sens_id < 290) {
+    } else if (245 < at_sens_id && at_sens_id < 290) {
       pressureAnalogIn = A1;
       pressure_conn = true;
     } else {
       pressure_conn = false;
     }
-    if (370 < _a0_sens_id && _a0_sens_id < 410) {
+    if (370 < a0_sens_id && a0_sens_id < 410) {
       voltageAnalogIn = A0;
       voltage_conn = true;
-    } else if (370 < _a1_sens_id && _a1_sens_id < 410) {
+    } else if (370 < at_sens_id && at_sens_id < 410) {
       voltageAnalogIn = A1;
       voltage_conn = true;
     } else {
       voltage_conn = false;
     }
-    if (490 < _a0_sens_id && _a0_sens_id < 530) {
+    if (490 < a0_sens_id && a0_sens_id < 530) {
       currentAnalogIn = A0;
       current_conn = true;
-    } else if (490 < _a1_sens_id && _a1_sens_id < 530) {
+    } else if (490 < at_sens_id && at_sens_id < 530) {
       currentAnalogIn = A1;
       current_conn = true;
     } else {
       current_conn = false;
     }
+    if (820 < a0_sens_id && a0_sens_id < 870) {
+      thermAnalogIn = A0;
+      therm_conn = true;
+    } else if (820 < at_sens_id && at_sens_id < 870) {
+      thermAnalogIn = A1;
+      therm_conn = true;
+    } else {
+      therm_conn = false;
+    }
 #ifdef DEBUG_SENS_MUX
     Serial.print("a0_sens_id: ");
-    Serial.print(_a0_sens_id);
+    Serial.print(a0_sens_id);
     Serial.print("  a1_sens_id: ");
-    Serial.println(_a1_sens_id);
+    Serial.println(at_sens_id);
 #endif
     ThisThread::sleep_for(100);
   }
@@ -1044,6 +1106,8 @@ void setup() {
     labService.addCharacteristic(HTS_NOTIFY_CHR_UID);
     labService.addCharacteristic(LPS22HB_SEND_CHR_UID);
     labService.addCharacteristic(LPS22HB_NOTIFY_CHR_UID);
+    labService.addCharacteristic(THERM_SEND_CHR_UID);
+    labService.addCharacteristic(THERM_NOTIFY_CHR_UID);
     BLE.addService(labService);
     BLE.setEventHandler(BLEConnected, BLEconnectHandler);
     BLE.setEventHandler(BLEDisconnected, BLEdisconnectHandler);
@@ -1086,6 +1150,8 @@ void setup() {
     HTS_NOTIFY_CHR_UID.setValue("");
     LPS22HB_SEND_CHR_UID.setValue("");
     LPS22HB_NOTIFY_CHR_UID.setValue("");
+    THERM_SEND_CHR_UID.setValue("");
+    THERM_NOTIFY_CHR_UID.setValue("");
     BLE.advertise();
 #ifdef DEBUG_MODE
     Serial.println("DONE.");
