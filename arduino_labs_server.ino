@@ -399,7 +399,13 @@ void ph() {
 
 void pressure() {
   pinMode(pressureAnalogIn, INPUT);
+#ifdef DEBUG_MODE
+  Serial.println("[PRES]\tCycle started : pressure");
+#endif
   for (;;) {
+#ifdef DEBUG_MODE
+    Serial.println("[PRES]\titeration started : pressure");
+#endif
     uint32_t time1 = micros() / 1000;
     pressureSensVal = analogRead(pressureAnalogIn);
     uint8_t s[6] = {0xFF, 0,};
@@ -410,6 +416,9 @@ void pressure() {
 #endif
     MPX57000P_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
+#ifdef DEBUG_MODE
+    Serial.println("[PRES]\titeration ended : pressure");
+#endif
     ThisThread::sleep_for(del_pressure - (time2 - time1));
   }
 }
@@ -893,9 +902,15 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
     if (pressureAnalogIn == A0) {
       A0Thread->terminate();
       delete A0Thread;
+#ifdef DEBUG_MODE
+      Serial.println("[PRES]\tCycle ended : pressure");
+#endif
     } else if (pressureAnalogIn == A1) {
       A1Thread->terminate();
       delete A1Thread;
+#ifdef DEBUG_MODE
+      Serial.println("[PRES]\tCycle ended : pressure");
+#endif
     }
   } else if (pressure_n && !n_before && !pressure_conn) {
     MPX57000P_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
