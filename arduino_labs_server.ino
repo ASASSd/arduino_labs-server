@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.4-debug"
+#define SOFTVERSION "v1.4.1-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -406,7 +406,7 @@ void pressure() {
 #ifdef DEBUG_MODE
     Serial.println("[PRES]\titeration started : pressure");
 #endif
-    uint32_t time1 = micros() / 1000;
+    uint32_t time1 = millis();
     pressureSensVal = analogRead(pressureAnalogIn);
     uint8_t s[6] = {0xFF, 0,};
     memcpy(&s[2], &pressureSensVal, sizeof(pressureSensVal));
@@ -415,7 +415,7 @@ void pressure() {
     Serial.println(pressureSensVal);
 #endif
     MPX57000P_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
-    uint32_t time2 = micros() / 1000;
+    uint32_t time2 = millis();
 #ifdef DEBUG_MODE
     Serial.println("[PRES]\titeration ended : pressure");
 #endif
