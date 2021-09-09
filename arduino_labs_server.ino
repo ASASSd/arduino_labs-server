@@ -417,8 +417,10 @@ void pressure() {
     MPX57000P_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
 #ifdef DEBUG_MODE
     Serial.println("[PRES]\titeration ended : pressure");
+    Serial.print("[PRES]\ttime delta = ");
 #endif
     uint64_t time2 = millis();
+    Serial.println(time2 - time1);
     ThisThread::sleep_for(del_pressure - (time2 - time1));
   }
 }
