@@ -1,9 +1,9 @@
 //comment line below to disable debug mode
 #define DEBUG_MODE
 //comment line below to disable debug output of ID pins
-//#define DEBUG_SENS_MUX
+//define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.4.1-debug"
+#define SOFTVERSION "v1.5-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -169,7 +169,16 @@ void max31855() {
 #endif
     MAX31855K_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_max31855 - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[MAX]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -189,7 +198,16 @@ void ds18b20() {
 #endif
     DS18B20_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_ds18b20 - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[DS18]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -212,7 +230,7 @@ void tcs34725() {
     s[13] = (uint8_t)(colorTemp & 0x00FF);
     s[14] = (uint8_t)((colorTemp & 0xFF00) >> 8);
 #ifdef DEBUG_MODE
-    Serial.print("Color Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
+    Serial.print("[COLOR]\tColor Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
     Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
     Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
     Serial.print("G: "); Serial.print(g, DEC); Serial.print(" ");
@@ -225,7 +243,16 @@ void tcs34725() {
 #endif
     TCS34725_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_tcs34725 - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[COLOR]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -244,7 +271,16 @@ void tds() {
 #endif
     TDS_NOTIFY_CHR_UID.writeValue(s, 6);
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_tds - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[TDS]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -264,7 +300,16 @@ void lps22hb() {
 #endif
     LPS22HB_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_hts221 - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[BARO]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -287,7 +332,16 @@ void hts221() {
 #endif
     HTS_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_hts221 - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[HTS]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -333,7 +387,16 @@ void lsm9ds1() {
 #endif
     IMU_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = millis();
-    ThisThread::sleep_for(del_imu - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[IMU]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -354,7 +417,16 @@ void bluxv30() {
 #endif
     BLUX_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_bluxv30 - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[LUX]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 //routine for analog thermistor  ---------------------------------------------
@@ -372,7 +444,16 @@ void therm() {
 #endif
     THERM_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = millis();
-    ThisThread::sleep_for(del_therm - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[THERM]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -391,7 +472,16 @@ void ph() {
 #endif
     PH_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_ph - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[PH]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -399,14 +489,8 @@ void ph() {
 
 void pressure() {
   pinMode(pressureAnalogIn, INPUT);
-#ifdef DEBUG_MODE
-  Serial.println("[PRES]\tCycle started : pressure");
-#endif
   for (;;) {
-#ifdef DEBUG_MODE
-    Serial.println("[PRES]\titeration started : pressure");
-#endif
-    uint64_t time1 = millis();
+    uint32_t time1 = micros() / 1000;
     pressureSensVal = analogRead(pressureAnalogIn);
     uint8_t s[6] = {0xFF, 0,};
     memcpy(&s[2], &pressureSensVal, sizeof(pressureSensVal));
@@ -415,13 +499,17 @@ void pressure() {
     Serial.println(pressureSensVal);
 #endif
     MPX57000P_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
+    uint32_t time2 = micros() / 1000;
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
 #ifdef DEBUG_MODE
-    Serial.println("[PRES]\titeration ended : pressure");
-    Serial.print("[PRES]\ttime delta = ");
+      Serial.print("[PRES]\t!!!Time overflow: ");
+      Serial.println(delta);
 #endif
-    uint64_t time2 = millis();
-    Serial.println(time2 - time1);
-    ThisThread::sleep_for(del_pressure - (time2 - time1));
+      ThisThread::yield();
+    }
   }
 }
 //routine for analog voltage sensor ------------------------------------------
@@ -439,7 +527,16 @@ void voltage() {
 #endif
     VOLT_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_voltage - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[VOLT]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -458,7 +555,16 @@ void magnet() {
 #endif
     MAGNET_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_magnet - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[MAGN]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -477,7 +583,16 @@ void current() {
 #endif
     ACS712_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    ThisThread::sleep_for(del_current - (time2 - time1));
+    int32_t delta = del_pressure - (time2 - time1);
+    if (delta > 0) {
+      ThisThread::sleep_for(delta);
+    } else {
+#ifdef DEBUG_MODE
+      Serial.print("[CURR]\t!!!Time overflow: ");
+      Serial.println(delta);
+#endif
+      ThisThread::yield();
+    }
   }
 }
 
@@ -904,15 +1019,9 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
     if (pressureAnalogIn == A0) {
       A0Thread->terminate();
       delete A0Thread;
-#ifdef DEBUG_MODE
-      Serial.println("[PRES]\tCycle ended : pressure");
-#endif
     } else if (pressureAnalogIn == A1) {
       A1Thread->terminate();
       delete A1Thread;
-#ifdef DEBUG_MODE
-      Serial.println("[PRES]\tCycle ended : pressure");
-#endif
     }
   } else if (pressure_n && !n_before && !pressure_conn) {
     MPX57000P_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
@@ -1029,64 +1138,64 @@ void analogSensorMux() {
   pinMode(A3, INPUT);
   for (;;) {
     uint16_t a0_sens_id = analogRead(A2), at_sens_id = analogRead(A3);
-    if (135 < a0_sens_id && a0_sens_id < 175) {
+    if (540 < a0_sens_id && a0_sens_id < 700) {
       magnetAnalogIn = A0;
       magnet_conn = true;
-    } else if (135 < at_sens_id && at_sens_id < 175) {
+    } else if (540 < at_sens_id && at_sens_id < 700) {
       magnetAnalogIn = A1;
       magnet_conn = true;
     } else {
       magnet_conn = false;
     }
-    if (750 < a0_sens_id && a0_sens_id < 780) {
+    if (3000 < a0_sens_id && a0_sens_id < 3150) {
       tdsAnalogIn = A0;
       tds_conn = true;
-    } else if (750 < at_sens_id && at_sens_id < 780) {
+    } else if (3000 < at_sens_id && at_sens_id < 3150) {
       tdsAnalogIn = A1;
       tds_conn = true;
     } else {
       tds_conn = false;
     }
-    if (660 < a0_sens_id && a0_sens_id < 690) {
+    if (2640 < a0_sens_id && a0_sens_id < 2800) {
       phAnalogIn = A0;
       ph_conn = true;
-    } else if (660 < at_sens_id && at_sens_id < 690) {
+    } else if (2640 < at_sens_id && at_sens_id < 2800) {
       phAnalogIn = A1;
       ph_conn = true;
     } else {
       ph_conn = false;
     }
-    if (245 < a0_sens_id && a0_sens_id < 290) {
+    if (980 < a0_sens_id && a0_sens_id < 1250) {
       pressureAnalogIn = A0;
       pressure_conn = true;
-    } else if (245 < at_sens_id && at_sens_id < 290) {
+    } else if (980 < at_sens_id && at_sens_id < 1250) {
       pressureAnalogIn = A1;
       pressure_conn = true;
     } else {
       pressure_conn = false;
     }
-    if (370 < a0_sens_id && a0_sens_id < 410) {
+    if (1480 < a0_sens_id && a0_sens_id < 1640) {
       voltageAnalogIn = A0;
       voltage_conn = true;
-    } else if (370 < at_sens_id && at_sens_id < 410) {
+    } else if (1480 < at_sens_id && at_sens_id < 1640) {
       voltageAnalogIn = A1;
       voltage_conn = true;
     } else {
       voltage_conn = false;
     }
-    if (490 < a0_sens_id && a0_sens_id < 530) {
+    if (1960 < a0_sens_id && a0_sens_id < 2150) {
       currentAnalogIn = A0;
       current_conn = true;
-    } else if (490 < at_sens_id && at_sens_id < 530) {
+    } else if (1960 < at_sens_id && at_sens_id < 2150) {
       currentAnalogIn = A1;
       current_conn = true;
     } else {
       current_conn = false;
     }
-    if (810 < a0_sens_id && a0_sens_id < 880) {
+    if (3240 < a0_sens_id && a0_sens_id < 3500) {
       thermAnalogIn = A0;
       therm_conn = true;
-    } else if (810 < at_sens_id && at_sens_id < 880) {
+    } else if (3240 < at_sens_id && at_sens_id < 3500) {
       thermAnalogIn = A1;
       therm_conn = true;
     } else {
@@ -1106,7 +1215,7 @@ void setup() {
   analogReadResolution(12);
 #ifdef DEBUG_MODE
   Serial.begin(9600);
-  while (!Serial) delay(1);
+  //while (!Serial) delay(1);
   Serial.println();
   Serial.print("Multisensor software ");
   Serial.print(SOFTVERSION);
