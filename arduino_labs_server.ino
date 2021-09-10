@@ -3,7 +3,7 @@
 //comment line below to disable debug output of ID pins
 //define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.5-debug"
+#define SOFTVERSION "v1.6-release"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -53,7 +53,7 @@ uint32_t del_current = 1000;
 #include <ArduinoBLE.h>
 BLEService labService("2086C901-9167-4F23-8A7A-F514BD665227");
 BLECharacteristic TCS34725_SEND_CHR_UID("B807621A-19E3-40E0-B4F5-AEDCFE28C7CA", BLERead | BLEWrite, 5, true);
-BLECharacteristic TCS34725_NOTIFY_CHR_UID("48606B19-820D-48D0-91B8-DF6A4F8DCBD4", BLERead | BLENotify, 17, true);
+BLECharacteristic TCS34725_NOTIFY_CHR_UID("48606B19-820D-48D0-91B8-DF6A4F8DCBD4", BLERead | BLENotify, 33, true);
 BLECharacteristic DS18B20_SEND_CHR_UID("09EB425D-8627-4FCB-AEA8-638BCF3F73F7", BLERead | BLEWrite, 5, true);
 BLECharacteristic DS18B20_NOTIFY_CHR_UID("8103F9B3-C91E-47CD-8634-4B7D8F4D018D", BLERead | BLENotify, 5, true);
 BLECharacteristic MAGNET_SEND_CHR_UID("3B75281E-00A0-4424-84C5-4C549CC1AE82", BLERead | BLEWrite, 5, true);
@@ -169,7 +169,7 @@ void max31855() {
 #endif
     MAX31855K_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_max31855 - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -198,7 +198,7 @@ void ds18b20() {
 #endif
     DS18B20_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_ds18b20 - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -218,32 +218,51 @@ void tcs34725() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     uint16_t r, g, b, c, colorTemp, lux = 0x00;
-    uint8_t s[17] = {0,};
-    tcs.getRawData(&r, &g, &b, &c);
+    float red, green, blue;
+    
+    uint8_t s[33] = {255,0,};
+    tcs.getRawData(&r, &g, &b, &c);    
+    tcs.getRGB(&red, &green, &blue);
     colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
-    s[1] = (uint8_t)(r & 0x00FF);
-    s[2] = (uint8_t)((r & 0xFF00) >> 8);
-    s[5] = (uint8_t)(g & 0x00FF);
-    s[6] = (uint8_t)((g & 0xFF00) >> 8);
-    s[9] = (uint8_t)(b & 0x00FF);
-    s[10] = (uint8_t)((b & 0xFF00) >> 8);
-    s[13] = (uint8_t)(colorTemp & 0x00FF);
-    s[14] = (uint8_t)((colorTemp & 0xFF00) >> 8);
+    
+    memcpy(&s[1], (uint8_t*) &r, 4);
+    memcpy(&s[5], (uint8_t*) &g, 4);
+    memcpy(&s[9], (uint8_t*) &b, 4);
+    memcpy(&s[13], (uint8_t*) &c, 4);
+    
+    memcpy(&s[17], (uint8_t*) &red, 4);
+    memcpy(&s[21], (uint8_t*) &green, 4);
+    memcpy(&s[25], (uint8_t*) &blue, 4);
+
+    memcpy(&s[29], (uint8_t*) &colorTemp, 2);
+    
+    //s[1] = (uint8_t)(r & 0x00FF);
+    //s[2] = (uint8_t)((r & 0xFF00) >> 8);
+    //s[5] = (uint8_t)(g & 0x00FF);
+    //s[6] = (uint8_t)((g & 0xFF00) >> 8);
+    //s[9] = (uint8_t)(b & 0x00FF);
+    //s[10] = (uint8_t)((b & 0xFF00) >> 8);
+    //s[13] = (uint8_t)(colorTemp & 0x00FF);
+    //s[14] = (uint8_t)((colorTemp & 0xFF00) >> 8);
 #ifdef DEBUG_MODE
-    Serial.print("[COLOR]\tColor Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
-    Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
-    Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
-    Serial.print("G: "); Serial.print(g, DEC); Serial.print(" ");
-    Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
-    Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
-    Serial.println(" ");
-    Serial.println(r, HEX);
-    Serial.println(s[1], HEX);
-    Serial.println(s[2], HEX);
+    Serial.print("[COLOR]\tRAW [");Serial.print(r); Serial.print(",");Serial.print(g); Serial.print(",");Serial.print(b); Serial.print(",");Serial.print(c); 
+    Serial.print("]. RGB ["); Serial.print(red); Serial.print(",");Serial.print(green); Serial.print(",");Serial.print(blue); Serial.print("] T "); Serial.println(colorTemp);
+
+    
+    //Serial.print("[COLOR]\tColor Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
+    //Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
+    //Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
+    //Serial.print("G: "); Serial.print(g, DEC); Serial.print(" ");
+    //Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
+    //Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
+    //Serial.println(" ");
+    //Serial.println(r, HEX);
+    //Serial.println(s[1], HEX);
+    //Serial.println(s[2], HEX);
 #endif
     TCS34725_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_tcs34725 - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -271,7 +290,7 @@ void tds() {
 #endif
     TDS_NOTIFY_CHR_UID.writeValue(s, 6);
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_tds - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -300,7 +319,7 @@ void lps22hb() {
 #endif
     LPS22HB_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_lps22hb - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -332,7 +351,7 @@ void hts221() {
 #endif
     HTS_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_hts221 - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -387,7 +406,7 @@ void lsm9ds1() {
 #endif
     IMU_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = millis();
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_imu - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -417,7 +436,7 @@ void bluxv30() {
 #endif
     BLUX_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_bluxv30 - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -444,7 +463,7 @@ void therm() {
 #endif
     THERM_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = millis();
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_therm - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -472,7 +491,7 @@ void ph() {
 #endif
     PH_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_ph - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -527,7 +546,7 @@ void voltage() {
 #endif
     VOLT_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_voltage - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -555,7 +574,7 @@ void magnet() {
 #endif
     MAGNET_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_magnet - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
@@ -583,7 +602,7 @@ void current() {
 #endif
     ACS712_NOTIFY_CHR_UID.writeValue(s, sizeof(s));
     uint32_t time2 = micros() / 1000;
-    int32_t delta = del_pressure - (time2 - time1);
+    int32_t delta = del_current - (time2 - time1);
     if (delta > 0) {
       ThisThread::sleep_for(delta);
     } else {
