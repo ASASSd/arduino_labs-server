@@ -1,9 +1,9 @@
-//uncomment line below to enable debug mode
-//#define DEBUG_MODE
-//uncomment line below to enable debug output of ID pins
-//define DEBUG_SENS_MUX
+//comment line below to disable debug mode
+#define DEBUG_MODE
+//comment line below to disable debug output of ID pins
+//#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.6-release"
+#define SOFTVERSION "v1.7-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -219,23 +219,25 @@ void tcs34725() {
     uint32_t time1 = micros() / 1000;
     uint16_t r, g, b, c, colorTemp, lux = 0x00;
     float red, green, blue;
-    
-    uint8_t s[33] = {255,0,};
-    tcs.getRawData(&r, &g, &b, &c);    
+
+    uint8_t s[33] = {255, 0,};
+    tcs.getRawData(&r, &g, &b, &c);
     tcs.getRGB(&red, &green, &blue);
     colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
-    
+
     memcpy(&s[1], (uint8_t*) &r, 4);
     memcpy(&s[5], (uint8_t*) &g, 4);
     memcpy(&s[9], (uint8_t*) &b, 4);
     memcpy(&s[13], (uint8_t*) &c, 4);
-    
+
     memcpy(&s[17], (uint8_t*) &red, 4);
     memcpy(&s[21], (uint8_t*) &green, 4);
     memcpy(&s[25], (uint8_t*) &blue, 4);
 
     memcpy(&s[29], (uint8_t*) &colorTemp, 2);
-    
+
+    //colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
+
     //s[1] = (uint8_t)(r & 0x00FF);
     //s[2] = (uint8_t)((r & 0xFF00) >> 8);
     //s[5] = (uint8_t)(g & 0x00FF);
@@ -245,10 +247,10 @@ void tcs34725() {
     //s[13] = (uint8_t)(colorTemp & 0x00FF);
     //s[14] = (uint8_t)((colorTemp & 0xFF00) >> 8);
 #ifdef DEBUG_MODE
-    Serial.print("[COLOR]\tRAW [");Serial.print(r); Serial.print(",");Serial.print(g); Serial.print(",");Serial.print(b); Serial.print(",");Serial.print(c); 
-    Serial.print("]. RGB ["); Serial.print(red); Serial.print(",");Serial.print(green); Serial.print(",");Serial.print(blue); Serial.print("] T "); Serial.println(colorTemp);
+    Serial.print("[COLOR]\tRAW ["); Serial.print(r); Serial.print(","); Serial.print(g); Serial.print(","); Serial.print(b); Serial.print(","); Serial.print(c);
+    Serial.print("]. RGB ["); Serial.print(red); Serial.print(","); Serial.print(green); Serial.print(","); Serial.print(blue); Serial.print("] T "); Serial.println(colorTemp);
 
-    
+
     //Serial.print("[COLOR]\tColor Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
     //Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
     //Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
@@ -281,7 +283,13 @@ void tds() {
   pinMode(tdsAnalogIn, INPUT);
   for (;;) {
     uint32_t time1 = micros() / 1000;
-    uint8_t s[6] = {0xFF, 0,};
+    uint8_t s[6];
+    if (tds_conn) {
+      s[0] = 0xFF;     
+    } else {
+      s[0] = 0x01;
+    }
+    s[1] = 0x00;
     tdsSensVal = analogRead(tdsAnalogIn);
     memcpy(&s[2], &tdsSensVal, sizeof(tdsSensVal));
 #ifdef DEBUG_MODE
@@ -455,7 +463,13 @@ void therm() {
   for (;;) {
     uint32_t time1 = millis();
     thermSensVal = analogRead(thermAnalogIn);
-    uint8_t s[6] = {0xFF, 0,};
+    uint8_t s[6];
+    if (therm_conn) {
+      s[0] = 0xFF;     
+    } else {
+      s[0] = 0x01;
+    }
+    s[1] = 0x00;
     memcpy(&s[2], &thermSensVal, sizeof(thermSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[THERM]\tSensor raw value: ");
@@ -483,7 +497,13 @@ void ph() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     phSensVal = analogRead(phAnalogIn);
-    uint8_t s[6] = {0xFF, 0,};
+    uint8_t s[6];
+    if (ph_conn) {
+      s[0] = 0xFF;     
+    } else {
+      s[0] = 0x01;
+    }
+    s[1] = 0x00;
     memcpy(&s[2], &phSensVal, sizeof(phSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[PH]\tSensor raw value: ");
@@ -511,7 +531,13 @@ void pressure() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     pressureSensVal = analogRead(pressureAnalogIn);
-    uint8_t s[6] = {0xFF, 0,};
+    uint8_t s[6];
+    if (pressure_conn) {
+      s[0] = 0xFF;     
+    } else {
+      s[0] = 0x01;
+    }
+    s[1] = 0x00;
     memcpy(&s[2], &pressureSensVal, sizeof(pressureSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[PRES]\tSensor raw value: ");
@@ -538,7 +564,13 @@ void voltage() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     voltageSensVal = analogRead(voltageAnalogIn);
-    uint8_t s[6] = {0xFF, 0,};
+    uint8_t s[6];
+    if (voltage_conn) {
+      s[0] = 0xFF;     
+    } else {
+      s[0] = 0x01;
+    }
+    s[1] = 0x00;
     memcpy(&s[2], &voltageSensVal, sizeof(voltageSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[VOLT]\tSensor raw value: ");
@@ -566,7 +598,13 @@ void magnet() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     magnetSensVal = analogRead(magnetAnalogIn);
-    uint8_t s[6] = {0xFF, 0,};
+    uint8_t s[6];
+    if (magnet_conn) {
+      s[0] = 0xFF;     
+    } else {
+      s[0] = 0x01;
+    }
+    s[1] = 0x00;
     memcpy(&s[2], &magnetSensVal, sizeof(magnetSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[MAGN]\tSensor raw value: ");
@@ -594,7 +632,13 @@ void current() {
   for (;;) {
     uint32_t time1 = micros() / 1000;
     currentSensVal = analogRead(currentAnalogIn);
-    uint8_t s[6] = {0xFF, 0,};
+    uint8_t s[6];
+    if (current_conn) {
+      s[0] = 0xFF;     
+    } else {
+      s[0] = 0x01;
+    }
+    s[1] = 0x00;
     memcpy(&s[2], &currentSensVal, sizeof(currentSensVal));
 #ifdef DEBUG_MODE
     Serial.print("[CURR]\tSensor raw value: ");
@@ -787,7 +831,7 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
   }
   magnet_n = s[0];
   del_magnet = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
-  if (magnet_n && !n_before && magnet_conn) {
+  if (magnet_n && !n_before) {
     if (magnetAnalogIn == A0) {
       A0Thread = new Thread;
       A0Thread->start(magnet);
@@ -803,12 +847,7 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
       A1Thread->terminate();
       delete A1Thread;
     }
-  } else if (magnet_n && !n_before && !magnet_conn) {
-    MAGNET_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
-    MAGNET_SEND_CHR_UID.setValue("");
-    magnet_n = 0;
 #ifdef DEBUG_MODE
-    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!magnet_n && !n_before) {
     Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of magnet!");
   } else if (magnet_n && n_before) {
@@ -891,7 +930,7 @@ void BLEwriteTDSHandler(BLEDevice central, BLECharacteristic characteristic) {
   }
   tds_n = s[0];
   del_tds = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
-  if (tds_n && !n_before && tds_conn) {
+  if (tds_n && !n_before) {
     if (tdsAnalogIn == A0) {
       A0Thread = new Thread;
       A0Thread->start(tds);
@@ -907,12 +946,7 @@ void BLEwriteTDSHandler(BLEDevice central, BLECharacteristic characteristic) {
       A1Thread->terminate();
       delete A1Thread;
     }
-  } else if (tds_n && !n_before && !tds_conn) {
-    TDS_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
-    TDS_SEND_CHR_UID.setValue("");
-    tds_n = 0;
 #ifdef DEBUG_MODE
-    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!tds_n && !n_before) {
     Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of tds!");
   } else if (tds_n && n_before) {
@@ -936,7 +970,7 @@ void BLEwritePHHandler(BLEDevice central, BLECharacteristic characteristic) {
   }
   ph_n = s[0];
   del_ph = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
-  if (ph_n && !n_before && ph_conn) {
+  if (ph_n && !n_before) {
     if (phAnalogIn == A0) {
       A0Thread = new Thread;
       A0Thread->start(ph);
@@ -952,12 +986,7 @@ void BLEwritePHHandler(BLEDevice central, BLECharacteristic characteristic) {
       A1Thread->terminate();
       delete A1Thread;
     }
-  } else if (ph_n && !n_before && !ph_conn) {
-    PH_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
-    PH_SEND_CHR_UID.setValue("");
-    ph_n = 0;
 #ifdef DEBUG_MODE
-    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!ph_n && !n_before) {
     Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of ph!");
   } else if (ph_n && n_before) {
@@ -981,7 +1010,7 @@ void BLEwriteTHERMHandler(BLEDevice central, BLECharacteristic characteristic) {
   }
   therm_n = s[0];
   del_therm = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
-  if (therm_n && !n_before && therm_conn) {
+  if (therm_n && !n_before) {
     if (thermAnalogIn == A0) {
       A0Thread = new Thread;
       A0Thread->start(therm);
@@ -997,12 +1026,7 @@ void BLEwriteTHERMHandler(BLEDevice central, BLECharacteristic characteristic) {
       A1Thread->terminate();
       delete A1Thread;
     }
-  } else if (therm_n && !n_before && !therm_conn) {
-    THERM_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
-    THERM_SEND_CHR_UID.setValue("");
-    therm_n = 0;
 #ifdef DEBUG_MODE
-    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!therm_n && !n_before) {
     Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of therm!");
   } else if (therm_n && n_before) {
@@ -1026,7 +1050,7 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
   }
   pressure_n = s[0];
   del_pressure = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
-  if (pressure_n && !n_before && pressure_conn) {
+  if (pressure_n && !n_before) {
     if (pressureAnalogIn == A0) {
       A0Thread = new Thread;
       A0Thread->start(pressure);
@@ -1042,12 +1066,7 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
       A1Thread->terminate();
       delete A1Thread;
     }
-  } else if (pressure_n && !n_before && !pressure_conn) {
-    MPX57000P_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
-    MPX57000P_SEND_CHR_UID.setValue("");
-    pressure_n = 0;
 #ifdef DEBUG_MODE
-    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!pressure_n && !n_before) {
     Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of pressure!");
   } else if (pressure_n && n_before) {
@@ -1071,7 +1090,7 @@ void BLEwriteVOLTHandler(BLEDevice central, BLECharacteristic characteristic) {
   }
   voltage_n = s[0];
   del_voltage = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
-  if (voltage_n && !n_before && voltage_conn) {
+  if (voltage_n && !n_before) {
     if (voltageAnalogIn == A0) {
       A0Thread = new Thread;
       A0Thread->start(voltage);
@@ -1087,12 +1106,7 @@ void BLEwriteVOLTHandler(BLEDevice central, BLECharacteristic characteristic) {
       A1Thread->terminate();
       delete A1Thread;
     }
-  } else if (voltage_n && !n_before && !voltage_conn) {
-    VOLT_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
-    VOLT_SEND_CHR_UID.setValue("");
-    voltage_n = 0;
 #ifdef DEBUG_MODE
-    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!voltage_n && !n_before) {
     Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of voltage!");
   } else if (voltage_n && n_before) {
@@ -1116,7 +1130,7 @@ void BLEwriteCURRHandler(BLEDevice central, BLECharacteristic characteristic) {
   }
   current_n = s[0];
   del_current = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
-  if (current_n && !n_before && current_conn) {
+  if (current_n && !n_before) {
     if (currentAnalogIn == A0) {
       A0Thread = new Thread;
       A0Thread->start(current);
@@ -1132,12 +1146,7 @@ void BLEwriteCURRHandler(BLEDevice central, BLECharacteristic characteristic) {
       A1Thread->terminate();
       delete A1Thread;
     }
-  } else if (current_n && !n_before && !current_conn) {
-    ACS712_NOTIFY_CHR_UID.writeValue(noSensorReply, sizeof(noSensorReply));
-    ACS712_SEND_CHR_UID.setValue("");
-    current_n = 0;
 #ifdef DEBUG_MODE
-    Serial.println("[ERROR]\tIllegal event: sensor is not connected!");
   } else if (!current_n && !n_before) {
     Serial.println("[ERROR]\tIllegal event: stopping non-existing thread of current!");
   } else if (current_n && n_before) {
@@ -1157,64 +1166,64 @@ void analogSensorMux() {
   pinMode(A3, INPUT);
   for (;;) {
     uint16_t a0_sens_id = analogRead(A2), at_sens_id = analogRead(A3);
-    if (540 < a0_sens_id && a0_sens_id < 700) {
+    if (400 < a0_sens_id && a0_sens_id < 860) {
       magnetAnalogIn = A0;
       magnet_conn = true;
-    } else if (540 < at_sens_id && at_sens_id < 700) {
+    } else if (400 < at_sens_id && at_sens_id < 860) {
       magnetAnalogIn = A1;
       magnet_conn = true;
     } else {
       magnet_conn = false;
     }
-    if (3000 < a0_sens_id && a0_sens_id < 3150) {
+    if (2801 < a0_sens_id && a0_sens_id < 3220) {
       tdsAnalogIn = A0;
       tds_conn = true;
-    } else if (3000 < at_sens_id && at_sens_id < 3150) {
+    } else if (2801 < at_sens_id && at_sens_id < 3220) {
       tdsAnalogIn = A1;
       tds_conn = true;
     } else {
       tds_conn = false;
     }
-    if (2640 < a0_sens_id && a0_sens_id < 2800) {
+    if (2421 < a0_sens_id && a0_sens_id < 2800) {
       phAnalogIn = A0;
       ph_conn = true;
-    } else if (2640 < at_sens_id && at_sens_id < 2800) {
+    } else if (2421 < at_sens_id && at_sens_id < 2800) {
       phAnalogIn = A1;
       ph_conn = true;
     } else {
       ph_conn = false;
     }
-    if (980 < a0_sens_id && a0_sens_id < 1250) {
+    if (861 < a0_sens_id && a0_sens_id < 1420) {
       pressureAnalogIn = A0;
       pressure_conn = true;
-    } else if (980 < at_sens_id && at_sens_id < 1250) {
+    } else if (861 < at_sens_id && at_sens_id < 1420) {
       pressureAnalogIn = A1;
       pressure_conn = true;
     } else {
       pressure_conn = false;
     }
-    if (1480 < a0_sens_id && a0_sens_id < 1640) {
+    if (1421 < a0_sens_id && a0_sens_id < 1820) {
       voltageAnalogIn = A0;
       voltage_conn = true;
-    } else if (1480 < at_sens_id && at_sens_id < 1640) {
+    } else if (1421 < at_sens_id && at_sens_id < 1820) {
       voltageAnalogIn = A1;
       voltage_conn = true;
     } else {
       voltage_conn = false;
     }
-    if (1960 < a0_sens_id && a0_sens_id < 2150) {
+    if (1821 < a0_sens_id && a0_sens_id < 2420) {
       currentAnalogIn = A0;
       current_conn = true;
-    } else if (1960 < at_sens_id && at_sens_id < 2150) {
+    } else if (1821 < at_sens_id && at_sens_id < 2420) {
       currentAnalogIn = A1;
       current_conn = true;
     } else {
       current_conn = false;
     }
-    if (3240 < a0_sens_id && a0_sens_id < 3500) {
+    if (3221 < a0_sens_id && a0_sens_id < 3600) {
       thermAnalogIn = A0;
       therm_conn = true;
-    } else if (3240 < at_sens_id && at_sens_id < 3500) {
+    } else if (3221 < at_sens_id && at_sens_id < 3600) {
       thermAnalogIn = A1;
       therm_conn = true;
     } else {
@@ -1234,7 +1243,7 @@ void setup() {
   analogReadResolution(12);
 #ifdef DEBUG_MODE
   Serial.begin(9600);
-  //while (!Serial) delay(1);
+  while (!Serial) delay(1);
   Serial.println();
   Serial.print("Multisensor software ");
   Serial.print(SOFTVERSION);
