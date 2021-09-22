@@ -1,11 +1,11 @@
 //uncomment line below to enable debug mode
-//#define DEBUG_MODE
+#define DEBUG_MODE
 //uncomment line below to enable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
 #define SOFTVERSION "v1.8-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
-
+uint8_t strobe = 0x00;
 //    ANALOG magnet includes    //
 
 uint8_t magnetAnalogIn = A0;
@@ -80,6 +80,7 @@ BLECharacteristic LPS22HB_SEND_CHR_UID("0FBA45BE-2DFE-45FF-9F52-9FD737380605", B
 BLECharacteristic LPS22HB_NOTIFY_CHR_UID("FBF457D8-AF8B-4A22-A60F-49AFA64FA962", BLERead | BLENotify, 5, true);
 BLECharacteristic THERM_SEND_CHR_UID("972f7de0-e9cb-4000-a466-c03da4b69dd0", BLERead | BLEWrite, 6, true);
 BLECharacteristic THERM_NOTIFY_CHR_UID("a8ffefd0-ab5a-4345-8cc6-97cf4f6e6ecb", BLERead | BLENotify, 6, true);
+BLECharacteristic STROBE_CHR_UID("b9446632-734a-4b53-91ac-f72a14ddd3b3", BLERead | BLENotify, 1, true);
 uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0, hts221_n = 0, therm_n = 0,
         bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0, current_n = 0, lps22hb_n = 0;
 bool magnet_conn = false, voltage_conn = false, tds_conn = false, therm_conn = false,
@@ -138,6 +139,7 @@ uint32_t del_bluxv30 = 1000;
 using namespace mbed;
 using namespace rtos;
 Thread sensMuxThread;
+Thread strobingThread;
 Thread* max31855Thread;
 Thread* tcs34725Thread;
 Thread* ds18b20Thread;
@@ -1337,6 +1339,15 @@ void analogSensorMux() {
   }
 }
 
+//routine for strobing status signals ----------------------------------------
+
+void strobing(){
+  for(;;){
+    strobe = ~strobe;
+    STROBE_CHR_UID.writeValue(strobe, sizeof(strobe));
+    ThisThread::sleep_for(1000);
+  }
+}
 void setup() {
   analogReadResolution(12);
 #ifdef DEBUG_MODE
@@ -1381,6 +1392,7 @@ void setup() {
     labService.addCharacteristic(LPS22HB_NOTIFY_CHR_UID);
     labService.addCharacteristic(THERM_SEND_CHR_UID);
     labService.addCharacteristic(THERM_NOTIFY_CHR_UID);
+    labService.addCharacteristic(STROBE_CHR_UID);
     BLE.addService(labService);
     BLE.setEventHandler(BLEConnected, BLEconnectHandler);
     BLE.setEventHandler(BLEDisconnected, BLEdisconnectHandler);
@@ -1426,6 +1438,7 @@ void setup() {
     LPS22HB_NOTIFY_CHR_UID.setValue("");
     THERM_SEND_CHR_UID.setValue("");
     THERM_NOTIFY_CHR_UID.setValue("");
+    STROBE_CHR_UID.setValue(0x00);
     BLE.advertise();
 #ifdef DEBUG_MODE
     Serial.println("DONE.");
@@ -1436,6 +1449,7 @@ void setup() {
   }
 #endif
   sensMuxThread.start(analogSensorMux);   //starting sensors selection thread
+  strobingThread.start(strobing);
 }
 
 void loop() {
