@@ -6,6 +6,7 @@
 #define SOFTVERSION "v1.8-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 uint8_t strobe = 0x00;
+
 //    ANALOG magnet includes    //
 
 uint8_t magnetAnalogIn = A0;
