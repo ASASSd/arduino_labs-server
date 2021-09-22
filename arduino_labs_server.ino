@@ -1,9 +1,9 @@
-//comment line below to disable debug mode
-#define DEBUG_MODE
-//comment line below to disable debug output of ID pins
+//uncomment line below to enable debug mode
+//#define DEBUG_MODE
+//uncomment line below to enable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.7-debug"
+#define SOFTVERSION "v1.8-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 
 //    ANALOG magnet includes    //
@@ -56,21 +56,21 @@ BLECharacteristic TCS34725_SEND_CHR_UID("B807621A-19E3-40E0-B4F5-AEDCFE28C7CA", 
 BLECharacteristic TCS34725_NOTIFY_CHR_UID("48606B19-820D-48D0-91B8-DF6A4F8DCBD4", BLERead | BLENotify, 33, true);
 BLECharacteristic DS18B20_SEND_CHR_UID("09EB425D-8627-4FCB-AEA8-638BCF3F73F7", BLERead | BLEWrite, 5, true);
 BLECharacteristic DS18B20_NOTIFY_CHR_UID("8103F9B3-C91E-47CD-8634-4B7D8F4D018D", BLERead | BLENotify, 5, true);
-BLECharacteristic MAGNET_SEND_CHR_UID("3B75281E-00A0-4424-84C5-4C549CC1AE82", BLERead | BLEWrite, 5, true);
+BLECharacteristic MAGNET_SEND_CHR_UID("3B75281E-00A0-4424-84C5-4C549CC1AE82", BLERead | BLEWrite, 6, true);
 BLECharacteristic MAGNET_NOTIFY_CHR_UID("EF8A1B0B-1005-4DAD-B49D-75F84488E52C", BLERead | BLENotify, 6, true);
 BLECharacteristic MAX31855K_SEND_CHR_UID("2DAF3C9C-CABA-461C-9FBC-1839D6F4E5B9", BLERead | BLEWrite, 5, true);
 BLECharacteristic MAX31855K_NOTIFY_CHR_UID("F449E6B7-FE1E-45FF-AEBB-DCFC914DEB42", BLERead | BLENotify, 5, true);
 BLECharacteristic BLUX_SEND_CHR_UID("B97A0D31-5278-408E-9CBB-D236E8A1A5C3", BLERead | BLEWrite, 5, true);
 BLECharacteristic BLUX_NOTIFY_CHR_UID("BF7C133C-7438-4AEF-A577-3D1BF65B2D1D", BLERead | BLENotify, 5, true);
-BLECharacteristic TDS_SEND_CHR_UID("FE0BECBC-6B15-4BEB-89EA-7FE670BC75C9", BLERead | BLEWrite, 5, true);
+BLECharacteristic TDS_SEND_CHR_UID("FE0BECBC-6B15-4BEB-89EA-7FE670BC75C9", BLERead | BLEWrite, 6, true);
 BLECharacteristic TDS_NOTIFY_CHR_UID("89117508-0D7E-47CC-9688-09177F4E979B", BLERead | BLENotify, 6, true);
-BLECharacteristic PH_SEND_CHR_UID("4572926D-B013-4868-9DD1-A930CD44D7FF", BLERead | BLEWrite, 5, true);
+BLECharacteristic PH_SEND_CHR_UID("4572926D-B013-4868-9DD1-A930CD44D7FF", BLERead | BLEWrite, 6, true);
 BLECharacteristic PH_NOTIFY_CHR_UID("9B264AE2-98F1-4905-A495-C15113A0D35B", BLERead | BLENotify, 6, true);
-BLECharacteristic MPX57000P_SEND_CHR_UID("6C8B0BBC-8096-4A20-9051-1819B5001EFD", BLERead | BLEWrite, 5, true);
+BLECharacteristic MPX57000P_SEND_CHR_UID("6C8B0BBC-8096-4A20-9051-1819B5001EFD", BLERead | BLEWrite, 6, true);
 BLECharacteristic MPX57000P_NOTIFY_CHR_UID("D22A68DB-3CC5-44FA-BDDE-45528B2A367D", BLERead | BLENotify, 6, true);
-BLECharacteristic VOLT_SEND_CHR_UID("EB0C9C2F-CD83-4460-8AC5-33DDAB36A393", BLERead | BLEWrite, 5, true);
+BLECharacteristic VOLT_SEND_CHR_UID("EB0C9C2F-CD83-4460-8AC5-33DDAB36A393", BLERead | BLEWrite, 6, true);
 BLECharacteristic VOLT_NOTIFY_CHR_UID("3C04F8A5-C302-468F-975B-E0EFD4FF2DD4", BLERead | BLENotify, 6, true);
-BLECharacteristic ACS712_SEND_CHR_UID("9B69DE8C-B847-4F81-A3E6-9D6998740D15", BLERead | BLEWrite, 5, true);
+BLECharacteristic ACS712_SEND_CHR_UID("9B69DE8C-B847-4F81-A3E6-9D6998740D15", BLERead | BLEWrite, 6, true);
 BLECharacteristic ACS712_NOTIFY_CHR_UID("A300379E-2934-43F7-BA6D-AECF4CF6605B", BLERead | BLENotify, 6, true);
 BLECharacteristic IMU_SEND_CHR_UID("8F89213C-97EE-4331-8C1D-A60501CB44F1", BLERead | BLEWrite, 5, true);
 BLECharacteristic IMU_NOTIFY_CHR_UID("00C31D7F-FDD6-422F-AC87-E4C8EB2F4A52", BLERead | BLENotify, 37, true);
@@ -78,7 +78,7 @@ BLECharacteristic HTS_SEND_CHR_UID("03BF53D8-2F5E-45DB-9F52-9FD737BF9605", BLERe
 BLECharacteristic HTS_NOTIFY_CHR_UID("7C41E7D8-EF7C-4B11-A401-49ACA64F5962", BLERead | BLENotify, 9, true);
 BLECharacteristic LPS22HB_SEND_CHR_UID("0FBA45BE-2DFE-45FF-9F52-9FD737380605", BLERead | BLEWrite, 5, true);
 BLECharacteristic LPS22HB_NOTIFY_CHR_UID("FBF457D8-AF8B-4A22-A60F-49AFA64FA962", BLERead | BLENotify, 5, true);
-BLECharacteristic THERM_SEND_CHR_UID("972f7de0-e9cb-4000-a466-c03da4b69dd0", BLERead | BLEWrite, 5, true);
+BLECharacteristic THERM_SEND_CHR_UID("972f7de0-e9cb-4000-a466-c03da4b69dd0", BLERead | BLEWrite, 6, true);
 BLECharacteristic THERM_NOTIFY_CHR_UID("a8ffefd0-ab5a-4345-8cc6-97cf4f6e6ecb", BLERead | BLENotify, 6, true);
 uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0, hts221_n = 0, therm_n = 0,
         bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0, current_n = 0, lps22hb_n = 0;
@@ -285,7 +285,7 @@ void tds() {
     uint32_t time1 = micros() / 1000;
     uint8_t s[6];
     if (tds_conn) {
-      s[0] = 0xFF;     
+      s[0] = 0xFF;
     } else {
       s[0] = 0x01;
     }
@@ -465,7 +465,7 @@ void therm() {
     thermSensVal = analogRead(thermAnalogIn);
     uint8_t s[6];
     if (therm_conn) {
-      s[0] = 0xFF;     
+      s[0] = 0xFF;
     } else {
       s[0] = 0x01;
     }
@@ -499,7 +499,7 @@ void ph() {
     phSensVal = analogRead(phAnalogIn);
     uint8_t s[6];
     if (ph_conn) {
-      s[0] = 0xFF;     
+      s[0] = 0xFF;
     } else {
       s[0] = 0x01;
     }
@@ -533,7 +533,7 @@ void pressure() {
     pressureSensVal = analogRead(pressureAnalogIn);
     uint8_t s[6];
     if (pressure_conn) {
-      s[0] = 0xFF;     
+      s[0] = 0xFF;
     } else {
       s[0] = 0x01;
     }
@@ -566,7 +566,7 @@ void voltage() {
     voltageSensVal = analogRead(voltageAnalogIn);
     uint8_t s[6];
     if (voltage_conn) {
-      s[0] = 0xFF;     
+      s[0] = 0xFF;
     } else {
       s[0] = 0x01;
     }
@@ -600,7 +600,7 @@ void magnet() {
     magnetSensVal = analogRead(magnetAnalogIn);
     uint8_t s[6];
     if (magnet_conn) {
-      s[0] = 0xFF;     
+      s[0] = 0xFF;
     } else {
       s[0] = 0x01;
     }
@@ -634,7 +634,7 @@ void current() {
     currentSensVal = analogRead(currentAnalogIn);
     uint8_t s[6];
     if (current_conn) {
-      s[0] = 0xFF;     
+      s[0] = 0xFF;
     } else {
       s[0] = 0x01;
     }
@@ -825,19 +825,33 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
   Serial.println("[DEBUG]\tWrite event");
 #endif
   uint8_t n_before = magnet_n;
-  uint8_t s[5];
-  for (uint8_t i = 0; i < 5; i++) {
+  uint8_t s[6];
+  for (uint8_t i = 0; i < 6; i++) {
     s[i] = (uint8_t)MAGNET_SEND_CHR_UID.value()[i];
   }
   magnet_n = s[0];
   del_magnet = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (magnet_n && !n_before) {
-    if (magnetAnalogIn == A0) {
-      A0Thread = new Thread;
-      A0Thread->start(magnet);
-    } else if (magnetAnalogIn == A1) {
-      A1Thread = new Thread;
-      A1Thread->start(magnet);
+    switch (s[5]) {
+      case 0xFF:
+        if (magnetAnalogIn == A0) {
+          A0Thread = new Thread;
+          A0Thread->start(magnet);
+        } else if (magnetAnalogIn == A1) {
+          A1Thread = new Thread;
+          A1Thread->start(magnet);
+        }
+        break;
+      case 0x00:
+        magnetAnalogIn = A0;
+        A0Thread = new Thread;
+        A0Thread->start(magnet);
+        break;
+      case 0x01:
+        magnetAnalogIn = A1;
+        A1Thread = new Thread;
+        A1Thread->start(magnet);
+        break;
     }
   } else if (!magnet_n && n_before) {
     if (magnetAnalogIn == A0) {
@@ -924,19 +938,33 @@ void BLEwriteTDSHandler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("[DEBUG]\tWrite event");
 #endif
   uint8_t n_before = tds_n;
-  uint8_t s[5];
-  for (uint8_t i = 0; i < 5; i++) {
+  uint8_t s[6];
+  for (uint8_t i = 0; i < 6; i++) {
     s[i] = (uint8_t)TDS_SEND_CHR_UID.value()[i];
   }
   tds_n = s[0];
   del_tds = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (tds_n && !n_before) {
-    if (tdsAnalogIn == A0) {
-      A0Thread = new Thread;
-      A0Thread->start(tds);
-    } else if (tdsAnalogIn == A1) {
-      A1Thread = new Thread;
-      A1Thread->start(tds);
+    switch (s[5]) {
+      case 0xFF:
+        if (tdsAnalogIn == A0) {
+          A0Thread = new Thread;
+          A0Thread->start(tds);
+        } else if (tdsAnalogIn == A1) {
+          A1Thread = new Thread;
+          A1Thread->start(tds);
+        }
+        break;
+      case 0x00:
+        tdsAnalogIn = A0;
+        A0Thread = new Thread;
+        A0Thread->start(tds);
+        break;
+      case 0x01:
+        tdsAnalogIn = A1;
+        A1Thread = new Thread;
+        A1Thread->start(tds);
+        break;
     }
   } else if (!tds_n && n_before) {
     if (tdsAnalogIn == A0) {
@@ -964,19 +992,33 @@ void BLEwritePHHandler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("[DEBUG]\tWrite event");
 #endif
   uint8_t n_before = ph_n;
-  uint8_t s[5];
-  for (uint8_t i = 0; i < 5; i++) {
+  uint8_t s[6];
+  for (uint8_t i = 0; i < 6; i++) {
     s[i] = (uint8_t)PH_SEND_CHR_UID.value()[i];
   }
   ph_n = s[0];
   del_ph = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (ph_n && !n_before) {
-    if (phAnalogIn == A0) {
-      A0Thread = new Thread;
-      A0Thread->start(ph);
-    } else if (phAnalogIn == A1) {
-      A1Thread = new Thread;
-      A1Thread->start(ph);
+    switch (s[5]) {
+      case 0xFF:
+        if (phAnalogIn == A0) {
+          A0Thread = new Thread;
+          A0Thread->start(ph);
+        } else if (phAnalogIn == A1) {
+          A1Thread = new Thread;
+          A1Thread->start(ph);
+        }
+        break;
+      case 0x00:
+        phAnalogIn = A0;
+        A0Thread = new Thread;
+        A0Thread->start(ph);
+        break;
+      case 0x01:
+        phAnalogIn = A1;
+        A1Thread = new Thread;
+        A1Thread->start(ph);
+        break;
     }
   } else if (!ph_n && n_before) {
     if (phAnalogIn == A0) {
@@ -1004,19 +1046,33 @@ void BLEwriteTHERMHandler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("[DEBUG]\tWrite event");
 #endif
   uint8_t n_before = therm_n;
-  uint8_t s[5];
-  for (uint8_t i = 0; i < 5; i++) {
+  uint8_t s[6];
+  for (uint8_t i = 0; i < 6; i++) {
     s[i] = (uint8_t)THERM_SEND_CHR_UID.value()[i];
   }
   therm_n = s[0];
   del_therm = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (therm_n && !n_before) {
-    if (thermAnalogIn == A0) {
-      A0Thread = new Thread;
-      A0Thread->start(therm);
-    } else if (thermAnalogIn == A1) {
-      A1Thread = new Thread;
-      A1Thread->start(therm);
+    switch (s[5]) {
+      case 0xFF:
+        if (thermAnalogIn == A0) {
+          A0Thread = new Thread;
+          A0Thread->start(therm);
+        } else if (thermAnalogIn == A1) {
+          A1Thread = new Thread;
+          A1Thread->start(therm);
+        }
+        break;
+      case 0x00:
+        thermAnalogIn = A0;
+        A0Thread = new Thread;
+        A0Thread->start(therm);
+        break;
+      case 0x01:
+        thermAnalogIn = A1;
+        A1Thread = new Thread;
+        A1Thread->start(therm);
+        break;
     }
   } else if (!therm_n && n_before) {
     if (thermAnalogIn == A0) {
@@ -1044,19 +1100,33 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("[DEBUG]\tWrite event");
 #endif
   uint8_t n_before = pressure_n;
-  uint8_t s[5];
-  for (uint8_t i = 0; i < 5; i++) {
+  uint8_t s[6];
+  for (uint8_t i = 0; i < 6; i++) {
     s[i] = (uint8_t)MPX57000P_SEND_CHR_UID.value()[i];
   }
   pressure_n = s[0];
   del_pressure = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (pressure_n && !n_before) {
-    if (pressureAnalogIn == A0) {
-      A0Thread = new Thread;
-      A0Thread->start(pressure);
-    } else if (pressureAnalogIn == A1) {
-      A1Thread = new Thread;
-      A1Thread->start(pressure);
+    switch (s[5]) {
+      case 0xFF:
+        if (pressureAnalogIn == A0) {
+          A0Thread = new Thread;
+          A0Thread->start(pressure);
+        } else if (pressureAnalogIn == A1) {
+          A1Thread = new Thread;
+          A1Thread->start(pressure);
+        }
+        break;
+      case 0x00:
+        pressureAnalogIn = A0;
+        A0Thread = new Thread;
+        A0Thread->start(pressure);
+        break;
+      case 0x01:
+        pressureAnalogIn = A1;
+        A1Thread = new Thread;
+        A1Thread->start(pressure);
+        break;
     }
   } else if (!pressure_n && n_before) {
     if (pressureAnalogIn == A0) {
@@ -1084,19 +1154,33 @@ void BLEwriteVOLTHandler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("[DEBUG]\tWrite event");
 #endif
   uint8_t n_before = voltage_n;
-  uint8_t s[5];
-  for (uint8_t i = 0; i < 5; i++) {
+  uint8_t s[6];
+  for (uint8_t i = 0; i < 6; i++) {
     s[i] = (uint8_t)VOLT_SEND_CHR_UID.value()[i];
   }
   voltage_n = s[0];
   del_voltage = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (voltage_n && !n_before) {
-    if (voltageAnalogIn == A0) {
-      A0Thread = new Thread;
-      A0Thread->start(voltage);
-    } else if (voltageAnalogIn == A1) {
-      A1Thread = new Thread;
-      A1Thread->start(voltage);
+    switch (s[5]) {
+      case 0xFF:
+        if (voltageAnalogIn == A0) {
+          A0Thread = new Thread;
+          A0Thread->start(voltage);
+        } else if (voltageAnalogIn == A1) {
+          A1Thread = new Thread;
+          A1Thread->start(voltage);
+        }
+        break;
+      case 0x00:
+        voltageAnalogIn = A0;
+        A0Thread = new Thread;
+        A0Thread->start(voltage);
+        break;
+      case 0x01:
+        voltageAnalogIn = A1;
+        A1Thread = new Thread;
+        A1Thread->start(voltage);
+        break;
     }
   } else if (!voltage_n && n_before) {
     if (voltageAnalogIn == A0) {
@@ -1124,19 +1208,33 @@ void BLEwriteCURRHandler(BLEDevice central, BLECharacteristic characteristic) {
   Serial.println("[DEBUG]\tWrite event");
 #endif
   uint8_t n_before = current_n;
-  uint8_t s[5];
-  for (uint8_t i = 0; i < 5; i++) {
+  uint8_t s[6];
+  for (uint8_t i = 0; i < 6; i++) {
     s[i] = (uint8_t)ACS712_SEND_CHR_UID.value()[i];
   }
   current_n = s[0];
   del_current = (uint32_t)(s[1] << 24) | (uint32_t)(s[2] << 16) | (uint32_t)(s[3] << 8) | (uint32_t)s[4];
   if (current_n && !n_before) {
-    if (currentAnalogIn == A0) {
-      A0Thread = new Thread;
-      A0Thread->start(current);
-    } else if (currentAnalogIn == A1) {
-      A1Thread = new Thread;
-      A1Thread->start(current);
+    switch (s[5]) {
+      case 0xFF:
+        if (currentAnalogIn == A0) {
+          A0Thread = new Thread;
+          A0Thread->start(current);
+        } else if (currentAnalogIn == A1) {
+          A1Thread = new Thread;
+          A1Thread->start(current);
+        }
+        break;
+      case 0x00:
+        currentAnalogIn = A0;
+        A0Thread = new Thread;
+        A0Thread->start(current);
+        break;
+      case 0x01:
+        currentAnalogIn = A1;
+        A1Thread = new Thread;
+        A1Thread->start(current);
+        break;
     }
   } else if (!current_n && n_before) {
     if (currentAnalogIn == A0) {
