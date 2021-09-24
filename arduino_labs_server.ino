@@ -3,7 +3,7 @@
 //uncomment line below to enable debug output of ID pins
 //#define DEBUG_SENS_MUX
 
-#define SOFTVERSION "v1.8-debug"
+#define SOFTVERSION "v1.8.1-debug"
 uint8_t noSensorReply[6] = {0x01, 0x00,};
 uint8_t strobe = 0x00;
 
@@ -86,6 +86,8 @@ uint8_t ds18b20_n = 0, tcs34725_n = 0, magnet_n = 0, max31855_n = 0, imu_n = 0, 
         bluxv30_n = 0, tds_n = 0, ph_n = 0, pressure_n = 0, voltage_n = 0, current_n = 0, lps22hb_n = 0;
 bool magnet_conn = false, voltage_conn = false, tds_conn = false, therm_conn = false,
      ph_conn = false, pressure_conn = false, current_conn = false;
+bool magnet_conn_override = false, voltage_conn_override = false, tds_conn_override = false, therm_conn_override = false,
+     ph_conn_override = false, pressure_conn_override = false, current_conn_override = false;
 
 //      DS18B20 includes      //
 
@@ -847,20 +849,24 @@ void BLEwriteMAGNETHandler(BLEDevice central, BLECharacteristic characteristic) 
         break;
       case 0x00:
         magnetAnalogIn = A0;
+        magnet_conn_override = true;
         A0Thread = new Thread;
         A0Thread->start(magnet);
         break;
       case 0x01:
         magnetAnalogIn = A1;
+        magnet_conn_override = true;
         A1Thread = new Thread;
         A1Thread->start(magnet);
         break;
     }
   } else if (!magnet_n && n_before) {
     if (magnetAnalogIn == A0) {
+      magnet_conn_override = false;
       A0Thread->terminate();
       delete A0Thread;
     } else if (magnetAnalogIn == A1) {
+      magnet_conn_override = false;
       A1Thread->terminate();
       delete A1Thread;
     }
@@ -960,20 +966,24 @@ void BLEwriteTDSHandler(BLEDevice central, BLECharacteristic characteristic) {
         break;
       case 0x00:
         tdsAnalogIn = A0;
+        tds_conn_override = true;
         A0Thread = new Thread;
         A0Thread->start(tds);
         break;
       case 0x01:
         tdsAnalogIn = A1;
+        tds_conn_override = true;
         A1Thread = new Thread;
         A1Thread->start(tds);
         break;
     }
   } else if (!tds_n && n_before) {
     if (tdsAnalogIn == A0) {
+      tds_conn_override = false;
       A0Thread->terminate();
       delete A0Thread;
     } else if (tdsAnalogIn == A1) {
+      tds_conn_override = false;
       A1Thread->terminate();
       delete A1Thread;
     }
@@ -1014,20 +1024,24 @@ void BLEwritePHHandler(BLEDevice central, BLECharacteristic characteristic) {
         break;
       case 0x00:
         phAnalogIn = A0;
+        ph_conn_override = true;
         A0Thread = new Thread;
         A0Thread->start(ph);
         break;
       case 0x01:
         phAnalogIn = A1;
+        ph_conn_override = true;
         A1Thread = new Thread;
         A1Thread->start(ph);
         break;
     }
   } else if (!ph_n && n_before) {
     if (phAnalogIn == A0) {
+      ph_conn_override = false;
       A0Thread->terminate();
       delete A0Thread;
     } else if (phAnalogIn == A1) {
+      ph_conn_override = false;
       A1Thread->terminate();
       delete A1Thread;
     }
@@ -1068,20 +1082,24 @@ void BLEwriteTHERMHandler(BLEDevice central, BLECharacteristic characteristic) {
         break;
       case 0x00:
         thermAnalogIn = A0;
+        therm_conn_override = true;
         A0Thread = new Thread;
         A0Thread->start(therm);
         break;
       case 0x01:
         thermAnalogIn = A1;
+        therm_conn_override = true;
         A1Thread = new Thread;
         A1Thread->start(therm);
         break;
     }
   } else if (!therm_n && n_before) {
     if (thermAnalogIn == A0) {
+      therm_conn_override = false;
       A0Thread->terminate();
       delete A0Thread;
     } else if (thermAnalogIn == A1) {
+      therm_conn_override = false;
       A1Thread->terminate();
       delete A1Thread;
     }
@@ -1122,20 +1140,24 @@ void BLEwritePRESHandler(BLEDevice central, BLECharacteristic characteristic) {
         break;
       case 0x00:
         pressureAnalogIn = A0;
+        pressure_conn_override = true;
         A0Thread = new Thread;
         A0Thread->start(pressure);
         break;
       case 0x01:
         pressureAnalogIn = A1;
+        pressure_conn_override = true;
         A1Thread = new Thread;
         A1Thread->start(pressure);
         break;
     }
   } else if (!pressure_n && n_before) {
     if (pressureAnalogIn == A0) {
+      pressure_conn_override = false;
       A0Thread->terminate();
       delete A0Thread;
     } else if (pressureAnalogIn == A1) {
+      pressure_conn_override = false;
       A1Thread->terminate();
       delete A1Thread;
     }
@@ -1176,20 +1198,24 @@ void BLEwriteVOLTHandler(BLEDevice central, BLECharacteristic characteristic) {
         break;
       case 0x00:
         voltageAnalogIn = A0;
+        voltage_conn_override = true;
         A0Thread = new Thread;
         A0Thread->start(voltage);
         break;
       case 0x01:
         voltageAnalogIn = A1;
+        voltage_conn_override = true;
         A1Thread = new Thread;
         A1Thread->start(voltage);
         break;
     }
   } else if (!voltage_n && n_before) {
     if (voltageAnalogIn == A0) {
+      voltage_conn_override = false;
       A0Thread->terminate();
       delete A0Thread;
     } else if (voltageAnalogIn == A1) {
+      voltage_conn_override = false;
       A1Thread->terminate();
       delete A1Thread;
     }
@@ -1230,20 +1256,24 @@ void BLEwriteCURRHandler(BLEDevice central, BLECharacteristic characteristic) {
         break;
       case 0x00:
         currentAnalogIn = A0;
+        current_conn_override = true;
         A0Thread = new Thread;
         A0Thread->start(current);
         break;
       case 0x01:
         currentAnalogIn = A1;
+        current_conn_override = true;
         A1Thread = new Thread;
         A1Thread->start(current);
         break;
     }
   } else if (!current_n && n_before) {
     if (currentAnalogIn == A0) {
+      current_conn_override = false;
       A0Thread->terminate();
       delete A0Thread;
     } else if (currentAnalogIn == A1) {
+      current_conn_override = false;
       A1Thread->terminate();
       delete A1Thread;
     }
@@ -1267,64 +1297,64 @@ void analogSensorMux() {
   pinMode(A3, INPUT);
   for (;;) {
     uint16_t a0_sens_id = analogRead(A2), at_sens_id = analogRead(A3);
-    if (400 < a0_sens_id && a0_sens_id < 860) {
+    if ((400 < a0_sens_id && a0_sens_id < 860) && (!magnet_conn_override)) {
       magnetAnalogIn = A0;
       magnet_conn = true;
-    } else if (400 < at_sens_id && at_sens_id < 860) {
+    } else if ((400 < at_sens_id && at_sens_id < 860) && (!magnet_conn_override)) {
       magnetAnalogIn = A1;
       magnet_conn = true;
     } else {
       magnet_conn = false;
     }
-    if (2801 < a0_sens_id && a0_sens_id < 3220) {
+    if ((2901 < a0_sens_id && a0_sens_id < 3220) && (!tds_conn_override)) {
       tdsAnalogIn = A0;
       tds_conn = true;
-    } else if (2801 < at_sens_id && at_sens_id < 3220) {
+    } else if ((2901 < at_sens_id && at_sens_id < 3220) && (!tds_conn_override)) {
       tdsAnalogIn = A1;
       tds_conn = true;
     } else {
       tds_conn = false;
     }
-    if (2421 < a0_sens_id && a0_sens_id < 2800) {
+    if ((2421 < a0_sens_id && a0_sens_id < 2900) && (!ph_conn_override)) {
       phAnalogIn = A0;
       ph_conn = true;
-    } else if (2421 < at_sens_id && at_sens_id < 2800) {
+    } else if ((2421 < at_sens_id && at_sens_id < 2900) && (!ph_conn_override)) {
       phAnalogIn = A1;
       ph_conn = true;
     } else {
       ph_conn = false;
     }
-    if (861 < a0_sens_id && a0_sens_id < 1420) {
+    if ((861 < a0_sens_id && a0_sens_id < 1420) && (!pressure_conn_override)) {
       pressureAnalogIn = A0;
       pressure_conn = true;
-    } else if (861 < at_sens_id && at_sens_id < 1420) {
+    } else if ((861 < at_sens_id && at_sens_id < 1420) && (!pressure_conn_override)) {
       pressureAnalogIn = A1;
       pressure_conn = true;
     } else {
       pressure_conn = false;
     }
-    if (1421 < a0_sens_id && a0_sens_id < 1820) {
+    if ((1421 < a0_sens_id && a0_sens_id < 1820) && (!voltage_conn_override)) {
       voltageAnalogIn = A0;
       voltage_conn = true;
-    } else if (1421 < at_sens_id && at_sens_id < 1820) {
+    } else if ((1421 < at_sens_id && at_sens_id < 1820) && (!voltage_conn_override)) {
       voltageAnalogIn = A1;
       voltage_conn = true;
     } else {
       voltage_conn = false;
     }
-    if (1821 < a0_sens_id && a0_sens_id < 2420) {
+    if ((1821 < a0_sens_id && a0_sens_id < 2420) && (!current_conn_override)) {
       currentAnalogIn = A0;
       current_conn = true;
-    } else if (1821 < at_sens_id && at_sens_id < 2420) {
+    } else if ((1821 < at_sens_id && at_sens_id < 2420) && (!current_conn_override)) {
       currentAnalogIn = A1;
       current_conn = true;
     } else {
       current_conn = false;
     }
-    if (3221 < a0_sens_id && a0_sens_id < 3600) {
+    if ((3221 < a0_sens_id && a0_sens_id < 3600) && (!therm_conn_override)) {
       thermAnalogIn = A0;
       therm_conn = true;
-    } else if (3221 < at_sens_id && at_sens_id < 3600) {
+    } else if ((3221 < at_sens_id && at_sens_id < 3600) && (!therm_conn_override)) {
       thermAnalogIn = A1;
       therm_conn = true;
     } else {
@@ -1342,8 +1372,8 @@ void analogSensorMux() {
 
 //routine for strobing status signals ----------------------------------------
 
-void strobing(){
-  for(;;){
+void strobing() {
+  for (;;) {
     strobe = ~strobe;
     STROBE_CHR_UID.writeValue(strobe, sizeof(strobe));
     ThisThread::sleep_for(1000);
